@@ -2,7 +2,8 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, Users, ShoppingBag, Wallet, UserCog, FileText, Images, Settings, Sparkles, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const items = [
+type Item = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
+const items: Item[] = [
   { to: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard, exact: true },
   { to: "/dashboard/clients", label: "Clients", icon: Users },
   { to: "/dashboard/orders", label: "Commandes", icon: ShoppingBag },
@@ -11,7 +12,7 @@ const items = [
   { to: "/dashboard/reports", label: "Rapports", icon: FileText },
   { to: "/dashboard/gallery", label: "Galerie", icon: Images },
   { to: "/dashboard/settings", label: "Paramètres", icon: Settings },
-] as const;
+];
 
 export function DashboardSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
@@ -29,7 +30,7 @@ export function DashboardSidebar({ onNavigate }: { onNavigate?: () => void }) {
           return (
             <Link
               key={it.to}
-              to={it.to}
+              to={it.to as string}
               onClick={onNavigate}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
