@@ -1,0 +1,19 @@
+{
+  "name": "Creativ Pressing",
+  "short_name": "Pressing",
+  "description": "CRM mobile pour gérer clients, commandes, dépenses et rapports de pressing.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

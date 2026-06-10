@@ -22,7 +22,7 @@ function SignupPage() {
   // Configuration enrichie des champs avec icônes
   const fields = [
     { id: "shop", label: "Nom du pressing", type: "text", ph: "Ex: Pressing Le Lys", icon: Store, section: "boutique" },
-    { id: "owner", label: "Nom du propriétaire", type: "text", ph: "Ex: Ousmane Diop", icon: User, section: "boutique" },
+    { id: "owner", label: "Nom du propriétaire", type: "text", ph: "Ex: Nom du gérant", icon: User, section: "boutique" },
     { id: "phone", label: "Téléphone", type: "tel", ph: "+221 77 000 00 00", icon: Phone, section: "boutique" },
     { id: "city", label: "Ville", type: "text", ph: "Ex: Dakar", icon: Building2, section: "boutique" },
     { id: "address", label: "Adresse complète", type: "text", ph: "Ex: Rue 10, Sacré-Cœur", icon: MapPin, section: "boutique", fullWidth: true },

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Plus, Search, Pencil, Trash2, ShoppingBag, User, Layers, Banknote, Calendar, Phone, Upload } from "lucide-react";
+import { Banknote, Calendar, Layers, Pencil, Phone, Plus, Search, ShoppingBag, Trash2, Upload, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/dashboard/page-header";
-import { initialOrders, formatXOF, type Order, type OrderStatus, type PaymentStatus } from "@/lib/mock-data";
+import { formatXOF } from "@/services/api";
+import { pressingApi } from "@/services/pressing-api";
+import type { Order, OrderStatus, PaymentStatus } from "@/services/types";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/orders")({ component: OrdersPage });
@@ -19,11 +22,11 @@ const PAYMENTS: PaymentStatus[] = ["Payé", "Partiellement payé", "Non payé"];
 const PERIODS = ["Aujourd'hui", "Cette semaine", "Ce mois", "Tout"] as const;
 
 const statusColor: Record<OrderStatus, string> = {
-  "Reçu": "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100/80",
-  "En lavage": "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100/80",
-  "En repassage": "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100/80",
-  "Prêt": "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100/80",
-  "Livré": "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200/80",
+  "Reçu": "bg-blue-50 text-blue-700 border-blue-200",
+  "En lavage": "bg-amber-50 text-amber-700 border-amber-200",
+  "En repassage": "bg-purple-50 text-purple-700 border-purple-200",
+  "Prêt": "bg-emerald-50 text-emerald-700 border-emerald-200",
+  "Livré": "bg-slate-100 text-slate-600 border-slate-200",
 };
 
 const payColor: Record<PaymentStatus, string> = {
@@ -33,162 +36,116 @@ const payColor: Record<PaymentStatus, string> = {
 };
 
 function OrdersPage() {
-  const [list, setList] = useState<Order[]>(initialOrders);
+  const queryClient = useQueryClient();
+  const { data: list = [], isLoading, isError } = useQuery({
+    queryKey: ["orders"],
+    queryFn: pressingApi.orders.list,
+  });
   const [filter, setFilter] = useState<OrderStatus | "Tous">("Tous");
   const [period, setPeriod] = useState<(typeof PERIODS)[number]>("Tout");
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<any | null>(null); // Remplacé par any temporairement pour le numéro/fichier
+  const [editing, setEditing] = useState<Order | null>(null);
 
   const filtered = useMemo(
-    () => list.filter((o) =>
-      (filter === "Tous" || o.status === filter) &&
-      `${o.id} ${o.clientName} ${o.clientPhone ?? ""} ${o.items}`.toLowerCase().includes(search.toLowerCase())
-    ),
-    [list, filter, search]
+    () =>
+      list.filter(
+        (order) =>
+          (filter === "Tous" || order.status === filter) &&
+          `${order.id} ${order.clientName} ${order.clientPhone ?? ""} ${order.items}`.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [list, filter, search],
   );
 
-  const onSave = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    
-    // Récupération du fichier
-    const file = fd.get("attachment") as File;
+  const saveOrder = useMutation({
+    mutationFn: (payload: { id?: string; data: FormData }) =>
+      payload.id ? pressingApi.orders.update(payload.id, payload.data) : pressingApi.orders.create(payload.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success(editing ? "Commande mise à jour" : "Commande créée");
+      setOpen(false);
+      setEditing(null);
+    },
+    onError: () => toast.error("Impossible d'enregistrer la commande"),
+  });
 
-    const data = {
-      clientName: String(fd.get("clientName")),
-      clientPhone: String(fd.get("clientPhone") || ""), // Optionnel si déjà client régulier
-      items: String(fd.get("items")),
-      amount: Number(fd.get("amount") || 0),
-      status: String(fd.get("status")) as OrderStatus,
-      payment: String(fd.get("payment")) as PaymentStatus,
-      receivedAt: String(fd.get("receivedAt")),
-      deliveryAt: String(fd.get("deliveryAt")),
-      attachmentName: file && file.size > 0 ? file.name : (editing?.attachmentName ?? null)
-    };
+  const updateStatus = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: OrderStatus }) => pressingApi.orders.update(id, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success("Statut mis à jour");
+    },
+    onError: () => toast.error("Impossible de modifier le statut"),
+  });
 
-    if (editing) {
-      setList((l) => l.map((o) => (o.id === editing.id ? { ...o, ...data } : o)));
-      toast.success("Détails de la commande actualisés");
-    } else {
-      const id = `CMD-${1050 + list.length}`;
-      setList((l) => [{ id, clientId: "c1", ...data }, ...l]);
-      toast.success("Nouvelle commande créée avec succès");
-    }
-    setOpen(false); 
-    setEditing(null);
+  const deleteOrder = useMutation({
+    mutationFn: pressingApi.orders.remove,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success("Commande supprimée");
+    },
+    onError: () => toast.error("Impossible de supprimer cette commande"),
+  });
+
+  const onSave = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    saveOrder.mutate({ id: editing?.id, data: new FormData(event.currentTarget) });
   };
 
   const handleDelete = (id: string) => {
-    if (confirm("Supprimer définitivement cette commande ? Cette action annulera le suivi de ses articles.")) {
-      setList((l) => l.filter((x) => x.id !== id));
-      toast.success("Commande archivée / supprimée");
+    if (confirm("Supprimer définitivement cette commande ?")) {
+      deleteOrder.mutate(id);
     }
   };
 
+  const emptyMessage = isLoading
+    ? "Chargement des commandes..."
+    : isError
+      ? "Connectez votre API pour afficher les commandes."
+      : "Aucune commande ne correspond aux filtres.";
+
   return (
     <div className="space-y-6 animate-fade-in text-slate-900 antialiased">
-      <PageHeader 
-        title="Commandes" 
+      <PageHeader
+        title="Commandes"
         subtitle={`${list.length} fiches de traitement enregistrées`}
         actions={
-          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditing(null); }}>
+          <Dialog open={open} onOpenChange={(value) => { setOpen(value); if (!value) setEditing(null); }}>
             <DialogTrigger asChild>
-              <Button className="shadow-md shadow-primary/10 gap-1.5 font-semibold h-10">
+              <Button className="h-10 gap-1.5 font-semibold shadow-md shadow-primary/10">
                 <Plus className="h-4 w-4" /> Nouvelle commande
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-lg border-slate-200 max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-h-[92vh] overflow-y-auto border-slate-200 sm:max-w-lg">
               <DialogHeader>
-                <DialogTitle className="text-xl font-bold tracking-tight">
-                  {editing ? "Modifier la commande" : "Créer un dépôt de linge"}
-                </DialogTitle>
-                <DialogDescription className="text-sm text-muted-foreground">
-                  Saisissez les informations du client (avec ou sans compte) et les détails du linge.
-                </DialogDescription>
+                <DialogTitle>{editing ? "Modifier la commande" : "Créer un dépôt de linge"}</DialogTitle>
+                <DialogDescription>Saisissez les informations du client et les détails du linge.</DialogDescription>
               </DialogHeader>
-              
-              <form onSubmit={onSave} className="grid gap-4 sm:grid-cols-2 pt-2">
-                {/* Section Client Sans Compte / Avec Compte */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="clientName" className="text-xs font-semibold text-slate-700">Nom du client</Label>
-                  <div className="relative group">
-                    <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
-                    <Input id="clientName" name="clientName" required defaultValue={editing?.clientName ?? ""} placeholder="Ex: Amadou Diop" className="pl-9 h-10 border-slate-200" />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="clientPhone" className="text-xs font-semibold text-slate-700">Numéro de téléphone</Label>
-                  <div className="relative group">
-                    <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
-                    <Input id="clientPhone" name="clientPhone" type="tel" defaultValue={editing?.clientPhone ?? ""} placeholder="Ex: 77 XXX XX XX" className="pl-9 h-10 border-slate-200" />
-                  </div>
-                </div>
-
+              <form onSubmit={onSave} className="grid gap-4 pt-2 sm:grid-cols-2">
+                <Field icon={User} label="Nom du client" name="clientName" defaultValue={editing?.clientName} required />
+                <Field icon={Phone} label="Téléphone" name="clientPhone" defaultValue={editing?.clientPhone} type="tel" />
+                <Field icon={Layers} label="Articles déposés" name="items" defaultValue={editing?.items} required className="sm:col-span-2" />
+                <Field icon={Banknote} label="Montant total (FCFA)" name="amount" defaultValue={editing?.amount} type="number" required />
+                <SelectField label="État d'avancement" name="status" defaultValue={editing?.status ?? "Reçu"} values={STATUSES} />
+                <SelectField label="Règlement" name="payment" defaultValue={editing?.payment ?? "Non payé"} values={PAYMENTS} />
+                <Field label="Date de dépôt" name="receivedAt" defaultValue={editing?.receivedAt ?? new Date().toISOString().slice(0, 10)} type="date" required />
+                <Field label="Livraison prévue" name="deliveryAt" defaultValue={editing?.deliveryAt} type="date" required />
                 <div className="space-y-1.5 sm:col-span-2">
-                  <Label htmlFor="items" className="text-xs font-semibold text-slate-700">Détail des articles</Label>
-                  <div className="relative group">
-                    <Layers className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
-                    <Input id="items" name="items" required defaultValue={editing?.items ?? ""} placeholder="Ex: 3 Boubous, 2 Vestes, 1 Rideau" className="pl-9 h-10 border-slate-200" />
-                  </div>
+                  <Label htmlFor="attachment">Pièce jointe / photo</Label>
+                  <label htmlFor="attachment" className="flex h-24 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-200 bg-slate-50/50 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                    <Upload className="mb-1 h-5 w-5 text-slate-400" />
+                    <span>Ajouter une image ou un PDF</span>
+                    {editing?.attachmentName && <span className="mt-1 max-w-xs truncate text-emerald-600">{editing.attachmentName}</span>}
+                    <input id="attachment" name="attachment" type="file" className="hidden" accept="image/*,application/pdf" />
+                  </label>
                 </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="amount" className="text-xs font-semibold text-slate-700">Montant total (FCFA)</Label>
-                  <div className="relative group">
-                    <Banknote className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
-                    <Input id="amount" name="amount" type="number" required defaultValue={editing?.amount ?? ""} placeholder="0" className="pl-9 h-10 border-slate-200" />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-slate-700">État d'avancement</Label>
-                  <Select name="status" defaultValue={editing?.status ?? "Reçu"}>
-                    <SelectTrigger className="h-10 border-slate-200"><SelectValue /></SelectTrigger>
-                    <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-slate-700">Règlement caisse</Label>
-                  <Select name="payment" defaultValue={editing?.payment ?? "Non payé"}>
-                    <SelectTrigger className="h-10 border-slate-200"><SelectValue /></SelectTrigger>
-                    <SelectContent>{PAYMENTS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="receivedAt" className="text-xs font-semibold text-slate-700">Date de dépôt</Label>
-                  <Input id="receivedAt" name="receivedAt" type="date" required defaultValue={editing?.receivedAt ?? new Date().toISOString().slice(0, 10)} className="h-10 border-slate-200" />
-                </div>
-
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label htmlFor="deliveryAt" className="text-xs font-semibold text-slate-700">Date de livraison prévue</Label>
-                  <Input id="deliveryAt" name="deliveryAt" type="date" required defaultValue={editing?.deliveryAt ?? ""} className="h-10 border-slate-200" />
-                </div>
-
-                {/* Nouveau champ : Upload de fichier (Photo du linge ou reçu) */}
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label htmlFor="attachment" className="text-xs font-semibold text-slate-700">Pièce jointe / Photo du linge</Label>
-                  <div className="flex items-center justify-center w-full">
-                    <label htmlFor="attachment" className="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-200 border-dashed rounded-lg cursor-pointer bg-slate-50/50 hover:bg-slate-50 transition-colors">
-                      <div className="flex flex-col items-center justify-center pt-3 pb-3">
-                        <Upload className="w-5 h-5 mb-1 text-slate-400" />
-                        <p className="text-xs text-slate-500 font-medium">
-                          <span className="font-semibold text-primary">Cliquez pour uploader</span> ou glissez un fichier
-                        </p>
-                        {editing?.attachmentName && (
-                          <p className="text-[10px] text-emerald-600 mt-1 truncate max-w-xs">Fichier actuel : {editing.attachmentName}</p>
-                        )}
-                      </div>
-                      <input id="attachment" name="attachment" type="file" className="hidden" accept="image/*,application/pdf" />
-                    </label>
-                  </div>
-                </div>
-
-                <DialogFooter className="sm:col-span-2 pt-4 border-t border-slate-100">
-                  <Button type="submit" className="w-full font-semibold">{editing ? "Mettre à jour la commande" : "Enregistrer le dépôt"}</Button>
+                <DialogFooter className="border-t border-slate-100 pt-4 sm:col-span-2">
+                  <Button type="submit" disabled={saveOrder.isPending} className="w-full">
+                    {editing ? "Mettre à jour" : "Enregistrer le dépôt"}
+                  </Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -196,139 +153,86 @@ function OrdersPage() {
         }
       />
 
-      <Card className="border-slate-200/80 shadow-sm overflow-hidden bg-background">
-        <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-4">
-          <div className="relative flex-1 min-w-[240px] max-w-sm group">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
-            <Input 
-              value={search} 
-              onChange={(e) => setSearch(e.target.value)} 
-              placeholder="Rechercher un numéro, un client, un habit..." 
-              className="pl-9 h-10 bg-background border-slate-200 shadow-sm text-sm" 
-            />
+      <Card className="overflow-hidden border-slate-200/80 bg-background shadow-sm">
+        <div className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/50 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative w-full max-w-sm">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Rechercher..." className="h-10 pl-9" />
           </div>
-          
-          <div className="flex items-center gap-3">
-            <Select value={filter} onValueChange={(v) => setFilter(v as OrderStatus | "Tous")}>
-              <SelectTrigger className="w-[160px] h-10 border-slate-200 bg-background"><SelectValue placeholder="Filtrer l'état" /></SelectTrigger>
+          <div className="grid grid-cols-2 gap-3 sm:flex">
+            <Select value={filter} onValueChange={(value) => setFilter(value as OrderStatus | "Tous")}>
+              <SelectTrigger className="h-10 w-full bg-background sm:w-[160px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="Tous">Tous les statuts</SelectItem>
-                {STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                {STATUSES.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
               </SelectContent>
             </Select>
-
-            <Select value={period} onValueChange={(v) => setPeriod(v as (typeof PERIODS)[number])}>
-              <SelectTrigger className="w-[150px] h-10 border-slate-200 bg-background"><SelectValue placeholder="Période" /></SelectTrigger>
-              <SelectContent>{PERIODS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+            <Select value={period} onValueChange={(value) => setPeriod(value as (typeof PERIODS)[number])}>
+              <SelectTrigger className="h-10 w-full bg-background sm:w-[150px]"><SelectValue /></SelectTrigger>
+              <SelectContent>{PERIODS.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent>
             </Select>
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
+          <table className="w-full min-w-[980px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/70 text-slate-500 font-medium text-xs uppercase tracking-wider">
-                <th className="py-3 px-6 text-left font-semibold">Référence</th>
-                <th className="py-3 px-6 text-left font-semibold">Client</th>
-                <th className="py-3 px-6 text-left font-semibold">Articles déposés</th>
-                <th className="py-3 px-6 text-left font-semibold">Net à payer</th>
-                <th className="py-3 px-6 text-left font-semibold">Statut Traitement</th>
-                <th className="py-3 px-6 text-center font-semibold">Paiement</th>
-                <th className="py-3 px-6 text-left font-semibold">Livraison</th>
-                <th className="py-3 px-6 text-right font-semibold">Actions</th>
+              <tr className="border-b border-slate-100 bg-slate-50/70 text-xs uppercase tracking-wider text-slate-500">
+                <th className="px-4 py-3 text-left font-semibold">Référence</th>
+                <th className="px-4 py-3 text-left font-semibold">Client</th>
+                <th className="px-4 py-3 text-left font-semibold">Articles</th>
+                <th className="px-4 py-3 text-left font-semibold">Montant</th>
+                <th className="px-4 py-3 text-left font-semibold">Statut</th>
+                <th className="px-4 py-3 text-center font-semibold">Paiement</th>
+                <th className="px-4 py-3 text-left font-semibold">Livraison</th>
+                <th className="px-4 py-3 text-right font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filtered.map((o: any) => (
-                <tr key={o.id} className="hover:bg-slate-50/60 transition-colors group">
-                  <td className="py-3.5 px-6 whitespace-nowrap font-mono text-xs font-bold text-slate-500">
-                    {o.id}
+              {filtered.map((order) => (
+                <tr key={order.id} className="transition-colors hover:bg-slate-50/60">
+                  <td className="whitespace-nowrap px-4 py-3.5 font-mono text-xs font-bold text-slate-500">{order.id}</td>
+                  <td className="whitespace-nowrap px-4 py-3.5">
+                    <span className="font-semibold text-slate-800">{order.clientName}</span>
+                    {order.clientPhone && <span className="block text-[11px] font-medium text-slate-400">{order.clientPhone}</span>}
                   </td>
-
-                  <td className="py-3.5 px-6 whitespace-nowrap">
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-slate-800">{o.clientName}</span>
-                      {o.clientPhone && (
-                        <span className="text-[11px] text-slate-400 font-medium font-mono">{o.clientPhone}</span>
-                      )}
-                    </div>
+                  <td className="max-w-xs px-4 py-3.5 font-medium text-slate-500">
+                    <span className="block truncate">{order.items}</span>
+                    {order.attachmentName && <span className="block truncate text-[10px] text-primary">{order.attachmentName}</span>}
                   </td>
-
-                  <td className="py-3.5 px-6 text-slate-500 max-w-xs truncate font-medium">
-                    <div className="flex flex-col gap-0.5">
-                      <span>{o.items}</span>
-                      {o.attachmentName && (
-                        <span className="text-[10px] text-primary underline cursor-pointer truncate max-w-[180px]">📎 {o.attachmentName}</span>
-                      )}
-                    </div>
-                  </td>
-
-                  <td className="py-3.5 px-6 whitespace-nowrap font-bold text-slate-900">
-                    {formatXOF(o.amount)}
-                  </td>
-
-                  <td className="py-3.5 px-6 whitespace-nowrap">
-                    <Select 
-                      value={o.status} 
-                      onValueChange={(v) => { 
-                        setList((l) => l.map((x) => x.id === o.id ? { ...x, status: v as OrderStatus } : x)); 
-                        toast.success(`Commande passée en statut "${v}"`); 
-                      }}
-                    >
-                      <SelectTrigger className={`h-8 w-[135px] text-xs font-bold rounded-full border shadow-sm transition-all px-3 ${statusColor[o.status]}`}>
+                  <td className="whitespace-nowrap px-4 py-3.5 font-bold text-slate-900">{formatXOF(order.amount)}</td>
+                  <td className="whitespace-nowrap px-4 py-3.5">
+                    <Select value={order.status} onValueChange={(value) => updateStatus.mutate({ id: order.id, status: value as OrderStatus })}>
+                      <SelectTrigger className={`h-8 w-[135px] rounded-full px-3 text-xs font-bold ${statusColor[order.status]}`}>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        {STATUSES.map((s) => <SelectItem key={s} value={s} className="text-xs font-medium">{s}</SelectItem>)}
-                      </SelectContent>
+                      <SelectContent>{STATUSES.map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}</SelectContent>
                     </Select>
                   </td>
-
-                  <td className="py-3.5 px-6 whitespace-nowrap text-center">
-                    <Badge variant="outline" className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ring-1 ring-inset ${payColor[o.payment]}`}>
-                      {o.payment}
+                  <td className="whitespace-nowrap px-4 py-3.5 text-center">
+                    <Badge variant="outline" className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${payColor[order.payment]}`}>
+                      {order.payment}
                     </Badge>
                   </td>
-
-                  <td className="py-3.5 px-6 whitespace-nowrap text-slate-500 text-xs font-medium">
-                    <div className="flex items-center gap-1.5">
-                      <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                      <span>{o.deliveryAt}</span>
-                    </div>
+                  <td className="whitespace-nowrap px-4 py-3.5 text-xs font-medium text-slate-500">
+                    <Calendar className="mr-1.5 inline h-3.5 w-3.5 text-slate-400" />
+                    {order.deliveryAt}
                   </td>
-
-                  <td className="py-3.5 px-6 whitespace-nowrap text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        title="Éditer la commande"
-                        className="h-8 w-8 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
-                        onClick={() => { setEditing(o); setOpen(true); }}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        title="Archiver"
-                        className="h-8 w-8 text-slate-400 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                        onClick={() => handleDelete(o.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
+                  <td className="whitespace-nowrap px-4 py-3.5 text-right">
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setEditing(order); setOpen(true); }}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-destructive" onClick={() => handleDelete(order.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </td>
                 </tr>
               ))}
-
-              {filtered.length === 0 && (
+              {(filtered.length === 0 || isLoading || isError) && (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-slate-400 font-medium">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <ShoppingBag className="h-6 w-6 text-slate-300" />
-                      <span>Aucune commande ne correspond aux filtres appliqués</span>
-                    </div>
+                  <td colSpan={8} className="px-6 py-12 text-center font-medium text-slate-400">
+                    <ShoppingBag className="mx-auto mb-2 h-6 w-6 text-slate-300" />
+                    {emptyMessage}
                   </td>
                 </tr>
               )}
@@ -336,11 +240,40 @@ function OrdersPage() {
           </table>
         </div>
       </Card>
+    </div>
+  );
+}
 
-      <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-50 p-3 rounded-lg border border-slate-100 w-fit">
-        <span className="flex h-1.5 w-1.5 rounded-full bg-primary" />
-        <span>**Astuce de productivité :** La recherche globale filtre aussi par numéro de téléphone ! Pratique pour retrouver un client rapidement.</span>
+type FieldProps = {
+  label: string;
+  name: string;
+  defaultValue?: string | number | null;
+  type?: string;
+  required?: boolean;
+  className?: string;
+  icon?: typeof User;
+};
+
+function Field({ label, name, defaultValue, type = "text", required, className, icon: Icon }: FieldProps) {
+  return (
+    <div className={`space-y-1.5 ${className ?? ""}`}>
+      <Label htmlFor={name}>{label}</Label>
+      <div className="relative">
+        {Icon && <Icon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />}
+        <Input id={name} name={name} type={type} required={required} defaultValue={defaultValue ?? ""} className={Icon ? "h-10 pl-9" : "h-10"} />
       </div>
+    </div>
+  );
+}
+
+function SelectField<T extends string>({ label, name, defaultValue, values }: { label: string; name: string; defaultValue: T; values: readonly T[] }) {
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      <Select name={name} defaultValue={defaultValue}>
+        <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+        <SelectContent>{values.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent>
+      </Select>
     </div>
   );
 }

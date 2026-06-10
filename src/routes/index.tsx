@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   Users, ShoppingBag, Wallet, BarChart3, UserCog, Images, Bell, FileText,
   CreditCard, History, ShieldCheck, Sparkles, Clock, TrendingUp, MapPin,
-  CheckCircle2, ArrowRight, PlayCircle, Menu, X, Star, AlertTriangle,
+  CheckCircle2, ArrowRight, PlayCircle, Menu, X, AlertTriangle,
   Flame, Shirt, Percent, Landmark, HelpCircle, ChevronRight,UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -164,12 +164,12 @@ export function DashboardMockup() {
             {/* Topbar de salutation */}
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-muted-foreground font-medium">Gestionnaire : Ousmane Diop</div>
+                <div className="text-[10px] text-muted-foreground font-medium">Gestionnaire : Compte connecté</div>
                 <div className="text-xs font-bold text-foreground">Performance & Activités</div>
               </div>
               <div className="flex items-center gap-2">
                 <Bell className="h-3.5 w-3.5 text-muted-foreground cursor-pointer hover:text-foreground" />
-                <div className="h-6 w-6 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] text-white font-bold">OD</div>
+                <div className="h-6 w-6 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] text-white font-bold">CP</div>
               </div>
             </div>
 
@@ -196,7 +196,7 @@ export function DashboardMockup() {
             {/* 👥 Ligne 2 : Les nouvelles mesures de performance opérationnelle du pressing */}
             <div className="mb-4 grid grid-cols-3 gap-2">
               {[
-                { l: "Top Agent", v: "Fatou Diop", t: "145 cmdes", i: UserCheck, c: "text-purple-600 bg-purple-50" },
+                { l: "Top Agent", v: "Agent actif", t: "145 cmdes", i: UserCheck, c: "text-purple-600 bg-purple-50" },
                 { l: "Pointe", v: "18h - 20h", t: "110 cmdes", i: Clock, c: "text-amber-600 bg-amber-50" },
                 { l: "Canal Top", v: "Wave", t: "340.000 F", i: Wallet, c: "text-cyan-600 bg-cyan-50" },
               ].map((k) => (
@@ -238,7 +238,7 @@ export function DashboardMockup() {
         </div>
         <div>
           <div className="text-[11px] font-bold text-slate-800">SMS Envoyé automatiquement</div>
-          <div className="text-[9px] text-muted-foreground">"Commande prête !" à Aminata D.</div>
+          <div className="text-[9px] text-muted-foreground">"Commande prête !" au client</div>
         </div>
       </Card>
     </div>
@@ -490,43 +490,6 @@ function AdvantagesSection() {
   );
 }
 
-function Testimonials() {
-  const items = [
-    { name: "Ousmane Diop", role: "Pressing Elite — Dakar", text: "Depuis qu'on a lâché le cahier pour Creativ Pressing, nos clients reçoivent leur SMS dès que le boubou est prêt. Les impayés ont disparu !", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&q=80" },
-    { name: "Awa Mbaye", role: "Pressing de la Paix — Thiès", text: "L'application est tellement simple que mes employés l'ont prise en main en une après-midi. La fonction photo nous évite bien des disputes.", img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&q=80" },
-    { name: "Modou Sarr", role: "Le Grand Lavage — Saint-Louis", text: "Je pilote mes 2 boutiques depuis mon propre téléphone sans bouger de chez moi. Je vois le CA et les dépenses en temps réel. Indispensable.", img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&q=80" },
-  ];
-  return (
-    <section className="py-24 bg-background">
-      <div className="container mx-auto px-4">
-        <div className="mx-auto max-w-2xl text-center space-y-3">
-          <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5">Retours d'expérience</Badge>
-          <h2 className="text-3xl font-bold tracking-tight md:text-4xl text-slate-900">Ils ont numérisé leur pressing</h2>
-        </div>
-        <div className="mt-14 grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
-          {items.map((t, idx) => (
-            <Card key={idx} className="p-6 relative flex flex-col justify-between hover:shadow-lg transition-all duration-300">
-              <div>
-                <div className="mb-4 flex gap-0.5 text-amber-400">
-                  {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 fill-current" />)}
-                </div>
-                <p className="text-sm italic text-slate-600 leading-relaxed">"{t.text}"</p>
-              </div>
-              <div className="mt-6 flex items-center gap-3 pt-4 border-t border-slate-100">
-                <img src={t.img} alt={t.name} className="h-10 w-10 rounded-full object-cover border" loading="lazy" />
-                <div>
-                  <div className="text-xs font-bold text-slate-900">{t.name}</div>
-                  <div className="text-[11px] text-muted-foreground">{t.role}</div>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function useCountUp(target: number, duration = 1400) {
   const [val, setVal] = useState(0);
   const ref = useRef<HTMLDivElement | null>(null);
@@ -682,7 +645,6 @@ function LandingPage() {
         <RolesSection />
         <ScreensSection />
         <AdvantagesSection />
-        <Testimonials />
         <StatsSection />
         <FAQ />
         <FinalCTA />
