@@ -33,6 +33,7 @@ function Navbar() {
   const links = [
     { href: "#features", label: "Fonctionnalités" },
     { href: "#screens", label: "Aperçu" },
+    { href: "#download", label: "Télécharger" },
     { href: "#advantages", label: "Avantages" },
     { href: "#faq", label: "FAQ" },
   ];
@@ -54,6 +55,7 @@ function Navbar() {
         </nav>
         <div className="hidden items-center gap-3 md:flex">
           <Button variant="ghost" asChild><Link to="/login">Connexion</Link></Button>
+          <Button variant="outline" asChild><a href="#download">Télécharger</a></Button>
           <Button asChild className="shadow-sm bg-primary hover:opacity-90 transition-opacity"><Link to="/signup">Créer ma boutique</Link></Button>
         </div>
         <button className="md:hidden p-2 rounded-md hover:bg-muted" onClick={() => setOpen(!open)} aria-label="menu">
@@ -99,6 +101,9 @@ function Hero() {
           <div className="flex flex-col gap-3 sm:flex-row pt-2">
             <Button size="lg" asChild className="h-12 px-7 text-base shadow-lg group">
               <Link to="/signup">Créer ma boutique gratuitement <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" /></Link>
+            </Button>
+            <Button size="lg" variant="secondary" asChild className="h-12 px-7 text-base shadow-md">
+              <a href="#download"><Download className="mr-2 h-5 w-5" /> Télécharger l'app</a>
             </Button>
             <Button size="lg" variant="outline" asChild className="h-12 px-7 text-base bg-background/50 backdrop-blur-sm hover:bg-background">
               <Link to="/dashboard"><PlayCircle className="mr-2 h-5 w-5 text-primary" /> Voir la démo</Link>
