@@ -163,7 +163,32 @@ function ExpensesPage() {
       </div>
 
       <Card className="overflow-hidden border-slate-200/80 bg-background shadow-sm">
-        <div className="overflow-x-auto">
+        <div className="grid gap-3 p-3 sm:hidden">
+          {filtered.map((expense) => (
+            <Card key={expense.id} className="border-slate-200 p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <Badge variant="outline" className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${catStyles[expense.category]}`}>
+                    {expense.category}
+                  </Badge>
+                  <h3 className="mt-2 truncate text-sm font-black text-slate-900">{expense.description}</h3>
+                  <p className="mt-1 text-xs font-medium text-slate-500"><Calendar className="mr-1 inline h-3.5 w-3.5" /> {expense.date}</p>
+                </div>
+                <div className="text-right text-base font-black text-rose-600">- {formatXOF(expense.amount)}</div>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <Button variant="outline" size="sm" onClick={() => { setEditing(expense); setOpen(true); }}>
+                  <Pencil className="mr-1.5 h-3.5 w-3.5" /> Modifier
+                </Button>
+                <Button variant="outline" size="sm" className="text-destructive" onClick={() => deleteExpense.mutate(expense.id)}>
+                  <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Supprimer
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        <div className="hidden overflow-x-auto sm:block">
           <table className="w-full min-w-[760px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/70 text-xs uppercase tracking-wider text-slate-500">

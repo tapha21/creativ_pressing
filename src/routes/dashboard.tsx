@@ -1,10 +1,9 @@
 import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Bell, Command, Lock, LogOut, Menu, Search, X } from "lucide-react";
+import { Lock, LogOut, Menu, Settings, ShoppingBag, Users, Wallet, LayoutDashboard, X } from "lucide-react";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { canAccessFeature, clearAuthSession, getAuthSession, isSubscriptionUsable } from "@/services/auth";
 
 export const Route = createFileRoute("/dashboard")({
@@ -32,7 +31,7 @@ function DashboardLayout() {
       <div className="flex min-h-dvh items-center justify-center bg-slate-50 p-4">
         <Card className="w-full max-w-md p-6 text-center shadow-sm">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
-            <Bell className="h-6 w-6" />
+            <Lock className="h-6 w-6" />
           </div>
           <h1 className="text-xl font-black tracking-tight text-slate-900">Abonnement expire</h1>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -82,8 +81,8 @@ function DashboardLayout() {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-slate-200/80 bg-background px-3 shadow-sm shadow-slate-100/40 sm:px-4 lg:px-8">
-          <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4 lg:max-w-xl">
+        <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-200/80 bg-background px-3 shadow-sm shadow-slate-100/40 sm:h-16 sm:px-4 lg:px-8">
+          <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
             <Button
               variant="ghost"
               size="icon"
@@ -93,33 +92,14 @@ function DashboardLayout() {
             >
               {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
-
-            <div className="relative hidden w-full group sm:block">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-primary" />
-              <Input
-                placeholder="Rechercher une commande, un client..."
-                className="h-10 w-full rounded-lg border-slate-200 bg-slate-50 pl-9 pr-12 text-sm transition-all focus-visible:bg-background focus-visible:ring-primary/20"
-              />
-              <div className="absolute right-3 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 rounded border border-slate-200 bg-background px-1.5 py-0.5 text-[10px] font-medium text-slate-400 shadow-sm md:flex">
-                <Command className="h-2.5 w-2.5" />
-                <span>K</span>
-              </div>
+            <div className="min-w-0">
+              <div className="truncate text-sm font-black leading-tight text-slate-900 sm:text-base">{session?.shopName ?? "Boutique"}</div>
+              <div className="truncate text-[11px] font-semibold text-muted-foreground">{session?.subscriptionPlan ?? "Compte"}</div>
             </div>
           </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-4 sm:pl-4">
-            <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-              <Bell className="h-5 w-5" />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-blue-600 ring-2 ring-background" />
-            </Button>
-
-            <div className="hidden h-6 w-px bg-slate-200 sm:block" />
-
             <div className="flex items-center gap-3">
-              <div className="hidden text-right sm:block">
-                <div className="text-sm font-semibold leading-tight text-slate-800">{session?.shopName ?? "Boutique"}</div>
-                <div className="text-xs font-medium text-muted-foreground">{session?.subscriptionPlan ?? "Compte actif"}</div>
-              </div>
               {session?.logoUrl ? (
                 <img src={session.logoUrl} alt={session.shopName} className="h-9 w-9 rounded-xl object-cover shadow-md" />
               ) : (
@@ -144,12 +124,47 @@ function DashboardLayout() {
         </header>
 
         <main className="flex-1 overflow-auto bg-slate-50/40 p-3 sm:p-6 lg:p-8">
-          <div className="mx-auto max-w-7xl space-y-6">
+          <div className="mx-auto max-w-7xl space-y-6 pb-20 lg:pb-0">
             {canAccessCurrentPage ? <Outlet /> : <LockedFeature sessionPlan={session?.subscriptionPlan ?? "Basic"} />}
           </div>
         </main>
+        <MobileBottomNav session={session} path={path} />
       </div>
     </div>
+  );
+}
+
+const mobileItems = [
+  { to: "/dashboard", label: "Accueil", icon: LayoutDashboard, feature: "dashboard" },
+  { to: "/dashboard/clients", label: "Clients", icon: Users, feature: "clients" },
+  { to: "/dashboard/orders", label: "Cmdes", icon: ShoppingBag, feature: "orders" },
+  { to: "/dashboard/expenses", label: "Caisse", icon: Wallet, feature: "expenses" },
+  { to: "/dashboard/settings", label: "Reglages", icon: Settings, feature: "settings" },
+];
+
+function MobileBottomNav({ session, path }: { session: ReturnType<typeof getAuthSession>; path: string }) {
+  const visible = mobileItems.filter((item) => canAccessFeature(session, item.feature)).slice(0, 4);
+
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-background/95 px-2 pb-[env(safe-area-inset-bottom)] pt-1.5 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+      <div className="mx-auto grid max-w-md" style={{ gridTemplateColumns: `repeat(${visible.length}, minmax(0, 1fr))` }}>
+        {visible.map((item) => {
+          const active = item.to === "/dashboard" ? path === item.to : path.startsWith(item.to);
+          return (
+            <a
+              key={item.to}
+              href={item.to}
+              className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-bold transition-colors ${
+                active ? "bg-blue-50 text-primary" : "text-slate-500"
+              }`}
+            >
+              <item.icon className="h-5 w-5" />
+              {item.label}
+            </a>
+          );
+        })}
+      </div>
+    </nav>
   );
 }
 

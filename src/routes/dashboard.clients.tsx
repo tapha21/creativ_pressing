@@ -147,7 +147,41 @@ function ClientsPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="grid gap-3 p-3 sm:hidden">
+          {filtered.map((client) => (
+            <Card key={client.id} className="border-slate-200 p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-sm font-black uppercase text-primary">
+                    {client.name.slice(0, 2)}
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="truncate text-sm font-black text-slate-900">{client.name}</h3>
+                    <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-slate-500">
+                      <Phone className="h-3.5 w-3.5" /> {client.phone}
+                    </p>
+                    <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
+                      <MapPin className="h-3.5 w-3.5" /> {client.city} - {client.address}
+                    </p>
+                  </div>
+                </div>
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-[11px] font-bold text-blue-700">
+                  <ShoppingBag className="h-3 w-3" /> {client.totalOrders}
+                </span>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <Button variant="outline" size="sm" onClick={() => { setEditing(client); setOpen(true); }}>
+                  <Pencil className="mr-1.5 h-3.5 w-3.5" /> Modifier
+                </Button>
+                <Button variant="outline" size="sm" className="text-destructive" onClick={() => handleDelete(client.id)}>
+                  <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Supprimer
+                </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        <div className="hidden overflow-x-auto sm:block">
           <table className="w-full min-w-[760px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/70 text-xs uppercase tracking-wider text-slate-500">
