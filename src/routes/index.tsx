@@ -361,6 +361,20 @@ function ProblemsSection() {
           <p className="mx-auto mt-4 max-w-2xl text-muted-foreground leading-relaxed">
             Creativ Pressing centralise vos clients, commandes, encaissements (Orange Money, Wave, Cash) et dépenses pour vous faire gagner en sérénité et en rentabilité.
           </p>
+          <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button asChild className="h-11 gap-2 px-6 font-semibold shadow-md shadow-primary/10">
+              <a href="#download">
+                <Download className="h-4 w-4" />
+                Télécharger Android
+              </a>
+            </Button>
+            <Button asChild variant="outline" className="h-11 gap-2 bg-background px-6 font-semibold">
+              <a href="#download">
+                <Download className="h-4 w-4" />
+                Télécharger iOS
+              </a>
+            </Button>
+          </div>
         </div>
       </div>
     </section>
