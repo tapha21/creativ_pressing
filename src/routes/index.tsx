@@ -5,6 +5,7 @@ import {
   CreditCard, History, ShieldCheck, Sparkles, Clock, TrendingUp, MapPin,
   CheckCircle2, ArrowRight, PlayCircle, Menu, X, AlertTriangle,
   Flame, Shirt, Percent, Landmark, HelpCircle, ChevronRight,UserCheck,
+  QrCode, Download, Smartphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/accordion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { isPwaDisplayMode } from "@/services/auth";
 
 
 export const Route = createFileRoute("/")({
@@ -110,6 +112,82 @@ function Hero() {
         <div className="relative lg:ml-4">
           <DashboardMockup />
         </div>
+      </div>
+    </section>
+  );
+}
+
+function InstallSection() {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [iosHint, setIosHint] = useState(false);
+  const appUrl = "https://creativ-pressing.vercel.app/";
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(appUrl)}`;
+
+  useEffect(() => {
+    const handlePrompt = (event: Event) => {
+      event.preventDefault();
+      setDeferredPrompt(event);
+    };
+
+    window.addEventListener("beforeinstallprompt", handlePrompt);
+    return () => window.removeEventListener("beforeinstallprompt", handlePrompt);
+  }, []);
+
+  const installAndroid = async () => {
+    if (!deferredPrompt) {
+      window.location.href = appUrl;
+      return;
+    }
+
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice.catch(() => null);
+    setDeferredPrompt(null);
+  };
+
+  const installIos = () => {
+    setIosHint(true);
+  };
+
+  return (
+    <section id="download" className="border-y bg-slate-50/60 py-20">
+      <div className="container mx-auto grid items-center gap-10 px-4 lg:grid-cols-[1fr_280px]">
+        <div className="space-y-5">
+          <Badge variant="outline" className="gap-2 border-primary/20 bg-primary/5 text-primary">
+            <Smartphone className="h-3.5 w-3.5" />
+            Application PWA
+          </Badge>
+          <div className="max-w-2xl space-y-3">
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">Installez Creativ Pressing sur votre telephone</h2>
+            <p className="text-sm leading-relaxed text-muted-foreground md:text-base">
+              Scannez le QR code ou utilisez le bouton adapte a votre appareil pour ajouter l'application sur votre ecran d'accueil.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button type="button" size="lg" onClick={installAndroid} className="h-12 gap-2 px-6 font-semibold">
+              <Download className="h-4 w-4" />
+              Telecharger Android
+            </Button>
+            <Button type="button" size="lg" variant="outline" onClick={installIos} className="h-12 gap-2 bg-background px-6 font-semibold">
+              <Download className="h-4 w-4" />
+              Telecharger iOS
+            </Button>
+          </div>
+          {iosHint && (
+            <Card className="max-w-xl border-blue-100 bg-blue-50/80 p-4 text-sm font-medium text-blue-900">
+              Sur iPhone, ouvrez le lien dans Safari, touchez Partager, puis Ajouter a l'ecran d'accueil.
+            </Card>
+          )}
+        </div>
+        <Card className="mx-auto w-full max-w-[260px] border-slate-200 bg-background p-5 text-center shadow-sm">
+          <div className="mb-3 flex items-center justify-center gap-2 text-sm font-bold text-slate-900">
+            <QrCode className="h-4 w-4 text-primary" />
+            QR code
+          </div>
+          <img src={qrUrl} alt="QR code Creativ Pressing" className="mx-auto h-52 w-52 rounded-lg border bg-white p-2" loading="lazy" />
+          <a href={appUrl} className="mt-3 block truncate text-xs font-semibold text-primary hover:underline">
+            creativ-pressing.vercel.app
+          </a>
+        </Card>
       </div>
     </section>
   );
@@ -635,11 +713,18 @@ function FooterCol({ title, links }: { title: string; links: [string, string][] 
 }
 
 function LandingPage() {
+  useEffect(() => {
+    if (isPwaDisplayMode() && window.location.pathname === "/") {
+      window.location.replace("/login");
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-background antialiased selection:bg-primary/10 selection:text-primary">
       <Navbar />
       <main>
         <Hero />
+        <InstallSection />
         <ProblemsSection />
         <FeaturesSection />
         <RolesSection />

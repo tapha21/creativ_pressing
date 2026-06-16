@@ -2,7 +2,7 @@
   "name": "Creativ Pressing",
   "short_name": "Pressing",
   "description": "CRM mobile pour gérer clients, commandes, dépenses et rapports de pressing.",
-  "start_url": "/dashboard",
+  "start_url": "/login",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",

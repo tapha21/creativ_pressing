@@ -1,9 +1,10 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Bell, Command, Menu, Search, X } from "lucide-react";
+import { Bell, Command, LogOut, Menu, Search, X } from "lucide-react";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { clearAuthSession, getAuthSession } from "@/services/auth";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Tableau de bord — Creativ Pressing" }] }),
@@ -11,7 +12,18 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function DashboardLayout() {
+  const nav = useNavigate();
   const [open, setOpen] = useState(false);
+  const [session, setSession] = useState(() => getAuthSession());
+
+  useEffect(() => {
+    const currentSession = getAuthSession();
+    if (!currentSession) {
+      nav({ to: "/login" });
+      return;
+    }
+    setSession(currentSession);
+  }, [nav]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -70,12 +82,24 @@ function DashboardLayout() {
 
             <div className="flex items-center gap-3">
               <div className="hidden text-right sm:block">
-                <div className="text-sm font-semibold leading-tight text-slate-800">Utilisateur</div>
-                <div className="text-xs font-medium text-muted-foreground">Compte actif</div>
+                <div className="text-sm font-semibold leading-tight text-slate-800">{session?.shopName ?? "Boutique"}</div>
+                <div className="text-xs font-medium text-muted-foreground">{session?.userName ?? "Compte actif"}</div>
               </div>
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-xs font-bold text-white shadow-md shadow-blue-600/10">
-                CP
+                {(session?.shopName ?? "CP").slice(0, 2).toUpperCase()}
               </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-lg text-slate-600 hover:bg-slate-100"
+                onClick={() => {
+                  clearAuthSession();
+                  nav({ to: "/login" });
+                }}
+                aria-label="Se deconnecter"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </header>

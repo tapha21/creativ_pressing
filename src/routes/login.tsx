@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { pressingApi } from "@/services/pressing-api";
+import { saveAuthSession } from "@/services/auth";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Connexion — Creativ Pressing" }] }),
@@ -15,6 +18,26 @@ function LoginPage() {
   const nav = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    setLoading(true);
+
+    try {
+      const session = await pressingApi.auth.login({
+        email: String(formData.get("email")),
+        password: String(formData.get("password")),
+      });
+      saveAuthSession(session);
+      toast.success(`Bienvenue ${session.userName}`);
+      nav({ to: "/dashboard" });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Connexion impossible");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-background antialiased">
@@ -69,20 +92,14 @@ function LoginPage() {
             <p className="text-sm text-muted-foreground">Renseignez vos identifiants pour accéder à la caisse.</p>
           </div>
 
-          <form 
-            className="space-y-4" 
-            onSubmit={(e) => { 
-              e.preventDefault(); 
-              setLoading(true); 
-              setTimeout(() => nav({ to: "/dashboard" }), 800); 
-            }}
-          >
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
               <Label htmlFor="email" className="text-slate-700 font-medium text-xs">Adresse Email</Label>
               <div className="relative group">
                 <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
                 <Input 
                   id="email" 
+                  name="email"
                   type="email" 
                   required 
                   placeholder="nom@votrepressing.sn" 
@@ -100,6 +117,7 @@ function LoginPage() {
                 <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
                 <Input 
                   id="pass" 
+                  name="password"
                   type={showPassword ? "text" : "password"} 
                   required 
                   placeholder="••••••••" 

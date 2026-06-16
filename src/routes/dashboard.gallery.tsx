@@ -19,6 +19,10 @@ function GalleryPage() {
     queryKey: ["photos"],
     queryFn: pressingApi.photos.list,
   });
+  const { data: orders = [] } = useQuery({
+    queryKey: ["orders"],
+    queryFn: pressingApi.orders.list,
+  });
   const [filter, setFilter] = useState<"Tous" | "Avant" | "Après">("Tous");
   const [uploadType, setUploadType] = useState<"Avant" | "Après">("Avant");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -46,10 +50,16 @@ function GalleryPage() {
   const onUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    const orderId = orders[0]?.id;
+    if (!orderId) {
+      toast.error("Creez une commande avant d'ajouter une photo");
+      return;
+    }
 
     const payload = new FormData();
     payload.append("file", file);
     payload.append("type", uploadType);
+    payload.append("orderId", orderId);
     uploadPhoto.mutate(payload);
     event.target.value = "";
   };

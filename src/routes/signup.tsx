@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { pressingApi } from "@/services/pressing-api";
+import { saveAuthSession } from "@/services/auth";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Créer ma boutique — Creativ Pressing" }] }),
@@ -18,6 +21,31 @@ function SignupPage() {
   const nav = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    setLoading(true);
+
+    try {
+      const session = await pressingApi.auth.signup({
+        shopName: String(formData.get("shop")),
+        ownerName: String(formData.get("owner")),
+        phone: String(formData.get("phone")),
+        city: String(formData.get("city")),
+        address: String(formData.get("address")),
+        email: String(formData.get("email")),
+        password: String(formData.get("password")),
+      });
+      saveAuthSession(session);
+      toast.success(`Boutique ${session.shopName} creee`);
+      nav({ to: "/dashboard" });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Creation impossible");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Configuration enrichie des champs avec icônes
   const fields = [
@@ -51,14 +79,7 @@ function SignupPage() {
             <p className="text-sm text-muted-foreground">Configurez votre espace de gestion en moins de 2 minutes.</p>
           </div>
 
-          <form 
-            className="space-y-6" 
-            onSubmit={(e) => { 
-              e.preventDefault(); 
-              setLoading(true); 
-              setTimeout(() => nav({ to: "/dashboard" }), 900); 
-            }}
-          >
+          <form className="space-y-6" onSubmit={handleSubmit}>
             {/* SECTION 1 : Informations sur le Pressing */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 border-b pb-2">
@@ -72,6 +93,7 @@ function SignupPage() {
                       <f.icon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
                       <Input 
                         id={f.id} 
+                        name={f.id}
                         type={f.type} 
                         required 
                         placeholder={f.ph} 
@@ -96,6 +118,7 @@ function SignupPage() {
                       <f.icon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
                       <Input 
                         id={f.id} 
+                        name={f.id === "pass" ? "password" : f.id}
                         type={f.id === "pass" && showPassword ? "text" : f.type} 
                         required 
                         placeholder={f.ph} 

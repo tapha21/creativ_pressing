@@ -8,8 +8,31 @@ import type {
   PhotoItem,
   ReportsData,
 } from "./types";
+import type { AuthSession } from "./auth";
+
+export type LoginPayload = {
+  email: string;
+  password: string;
+};
+
+export type SignupPayload = {
+  shopName: string;
+  ownerName: string;
+  phone: string;
+  city: string;
+  address: string;
+  email: string;
+  password: string;
+};
 
 export const pressingApi = {
+  auth: {
+    login: (payload: LoginPayload) =>
+      apiRequest<AuthSession>("/api/auth/login", { method: "POST", body: JSON.stringify(payload), auth: false }),
+    signup: (payload: SignupPayload) =>
+      apiRequest<AuthSession>("/api/auth/signup", { method: "POST", body: JSON.stringify(payload), auth: false }),
+  },
+
   dashboard: () => apiRequest<DashboardSummary>("/api/dashboard"),
   reports: () => apiRequest<ReportsData>("/api/reports"),
 
@@ -25,13 +48,14 @@ export const pressingApi = {
   orders: {
     list: () => apiRequest<Order[]>("/api/orders"),
     create: (payload: FormData) =>
-      apiRequest<Order>("/api/orders", { method: "POST", body: payload, skipJsonHeader: true }),
+      apiRequest<Order>("/api/orders", { method: "POST", body: payload }),
     update: (id: string, payload: FormData | Partial<Order>) =>
-      apiRequest<Order>(`/api/orders/${id}`, {
-        method: "PUT",
-        body: payload instanceof FormData ? payload : JSON.stringify(payload),
-        skipJsonHeader: payload instanceof FormData,
-      }),
+      isStatusOnlyUpdate(payload)
+        ? apiRequest<Order>(`/api/orders/${id}/status?status=${encodeURIComponent(payload.status)}`, { method: "PATCH" })
+        : apiRequest<Order>(`/api/orders/${id}`, {
+            method: "PUT",
+            body: payload instanceof FormData ? payload : JSON.stringify(payload),
+          }),
     remove: (id: string) => apiRequest<void>(`/api/orders/${id}`, { method: "DELETE" }),
   },
 
@@ -56,7 +80,11 @@ export const pressingApi = {
   photos: {
     list: () => apiRequest<PhotoItem[]>("/api/photos"),
     upload: (payload: FormData) =>
-      apiRequest<PhotoItem>("/api/photos", { method: "POST", body: payload, skipJsonHeader: true }),
+      apiRequest<PhotoItem>("/api/photos/upload", { method: "POST", body: payload, skipJsonHeader: true, preserveFormData: true }),
     remove: (id: string) => apiRequest<void>(`/api/photos/${id}`, { method: "DELETE" }),
   },
 };
+
+function isStatusOnlyUpdate(payload: FormData | Partial<Order>): payload is Pick<Order, "status"> {
+  return !(payload instanceof FormData) && Object.keys(payload).length === 1 && typeof payload.status === "string";
+}
