@@ -26,7 +26,7 @@ function EmployeesPage() {
   const [editing, setEditing] = useState<Employee | null>(null);
 
   const saveEmployee = useMutation({
-    mutationFn: (payload: { id?: string; data: Pick<Employee, "name" | "phone" | "role"> }) =>
+    mutationFn: (payload: { id?: string; data: Partial<Employee> & Record<string, unknown> }) =>
       payload.id ? pressingApi.employees.update(payload.id, payload.data) : pressingApi.employees.create(payload.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
@@ -55,6 +55,9 @@ function EmployeesPage() {
         name: String(formData.get("name")),
         phone: String(formData.get("phone")),
         role: String(formData.get("role")) as Employee["role"],
+        email: String(formData.get("email") || ""),
+        joinedAt: String(formData.get("joinedAt") || editing?.joinedAt || new Date().toISOString().slice(0, 10)),
+        active: editing?.active ?? true,
       },
     });
   };
@@ -96,6 +99,14 @@ function EmployeesPage() {
                     <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <Input id="phone" name="phone" required defaultValue={editing?.phone ?? ""} className="h-10 pl-9" />
                   </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" name="email" type="email" defaultValue={(editing as Employee & { email?: string } | null)?.email ?? ""} className="h-10" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="joinedAt">Date d'arrivee</Label>
+                  <Input id="joinedAt" name="joinedAt" type="date" defaultValue={editing?.joinedAt ?? new Date().toISOString().slice(0, 10)} className="h-10" />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Rôle</Label>

@@ -50,6 +50,23 @@ export interface PhotoItem {
   date: string;
 }
 
+export interface Shop {
+  id: string;
+  name: string;
+  ownerName: string;
+  phone: string;
+  city: string;
+  address: string;
+  email: string;
+  logoUrl?: string | null;
+  subscriptionPlan: "Basic" | "Standard" | "Premium";
+  subscriptionStatus: "Essai" | "Actif" | "Expire" | "Suspendu";
+  trialEndsAt?: string | null;
+  subscriptionEndsAt?: string | null;
+  active: boolean;
+  createdAt: string;
+}
+
 export interface RevenuePoint {
   month: string;
   revenu: number;

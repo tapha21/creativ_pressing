@@ -32,8 +32,8 @@ function Navbar() {
   const [open, setOpen] = useState(false);
   const links = [
     { href: "#features", label: "Fonctionnalités" },
+    { href: "#demo-preview", label: "Démo" },
     { href: "#screens", label: "Aperçu" },
-    { href: "#download", label: "Télécharger" },
     { href: "#advantages", label: "Avantages" },
     { href: "#faq", label: "FAQ" },
   ];
@@ -55,7 +55,6 @@ function Navbar() {
         </nav>
         <div className="hidden items-center gap-3 md:flex">
           <Button variant="ghost" asChild><Link to="/login">Connexion</Link></Button>
-          <Button variant="outline" asChild><a href="#download">Télécharger</a></Button>
           <Button asChild className="shadow-sm bg-primary hover:opacity-90 transition-opacity"><Link to="/signup">Créer ma boutique</Link></Button>
         </div>
         <button className="md:hidden p-2 rounded-md hover:bg-muted" onClick={() => setOpen(!open)} aria-label="menu">
@@ -102,11 +101,8 @@ function Hero() {
             <Button size="lg" asChild className="h-12 px-7 text-base shadow-lg group">
               <Link to="/signup">Créer ma boutique gratuitement <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" /></Link>
             </Button>
-            <Button size="lg" variant="secondary" asChild className="h-12 px-7 text-base shadow-md">
-              <a href="#download"><Download className="mr-2 h-5 w-5" /> Télécharger l'app</a>
-            </Button>
             <Button size="lg" variant="outline" asChild className="h-12 px-7 text-base bg-background/50 backdrop-blur-sm hover:bg-background">
-              <Link to="/dashboard"><PlayCircle className="mr-2 h-5 w-5 text-primary" /> Voir la démo</Link>
+              <a href="#demo-preview"><PlayCircle className="mr-2 h-5 w-5 text-primary" /> Voir la demo</a>
             </Button>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground pt-4">
@@ -199,18 +195,16 @@ function InstallSection() {
 }
 
 export function DashboardMockup() {
-  // Les éléments exacts de ton menu de navigation réel
   const sideMenu = [
-    { label: "Tableau de bord", icon: BarChart3 },
+    { label: "Vue demo", icon: BarChart3 },
     { label: "Clients", icon: Users },
     { label: "Commandes", icon: ShoppingBag },
-    { label: "Dépenses", icon: Wallet },
-    { label: "Rapports", icon: FileText },
+    { label: "Caisse", icon: Wallet },
+    { label: "Equipe", icon: FileText },
   ];
 
   return (
-    <div className="relative group/mockup">
-      {/* Effet d'ombrage coloré en arrière-plan */}
+    <div id="demo-preview" className="scroll-mt-24 relative group/mockup">
       <div className="absolute -inset-4 -z-10 rounded-3xl opacity-20 blur-3xl transition-opacity group-hover/mockup:opacity-30 duration-500" style={{ background: "var(--gradient-primary)" }} />
       
       <Card className="overflow-hidden border shadow-2xl transition-all duration-300 group-hover/mockup:shadow-indigo-500/10" style={{ boxShadow: "var(--shadow-elegant)" }}>
@@ -219,7 +213,7 @@ export function DashboardMockup() {
           <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
           <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
           <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
-          <span className="ml-3 text-xs font-mono text-muted-foreground/80">app.creativpressing.sn</span>
+          <span className="ml-3 text-xs font-mono text-muted-foreground/80">demo.creativpressing.sn</span>
         </div>
 
         <div className="grid grid-cols-12 bg-background">
@@ -227,7 +221,7 @@ export function DashboardMockup() {
           <aside className="col-span-3 border-r bg-muted/10 p-3 hidden sm:block">
             <div className="mb-5 flex items-center gap-2 px-2">
               <div className="flex h-6 w-6 items-center justify-center rounded bg-primary text-[10px] text-primary-foreground font-bold">C</div>
-              <span className="text-xs font-bold tracking-tight">Creativ</span>
+              <span className="text-xs font-bold tracking-tight">Pressing Soleil</span>
             </div>
             {sideMenu.map((item, i) => (
               <div 
@@ -247,8 +241,8 @@ export function DashboardMockup() {
             {/* Topbar de salutation */}
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <div className="text-[10px] text-muted-foreground font-medium">Gestionnaire : Compte connecté</div>
-                <div className="text-xs font-bold text-foreground">Performance & Activités</div>
+                <div className="text-[10px] text-muted-foreground font-medium">Boutique fictive : Pressing Soleil</div>
+                <div className="text-xs font-bold text-foreground">Aperçu public sans connexion</div>
               </div>
               <div className="flex items-center gap-2">
                 <Bell className="h-3.5 w-3.5 text-muted-foreground cursor-pointer hover:text-foreground" />
@@ -259,9 +253,9 @@ export function DashboardMockup() {
             {/* 📊 Ligne 1 : Statistiques macro (Finances et Volumes) */}
             <div className="mb-3 grid grid-cols-3 gap-2">
               {[
-                { l: "Revenus", v: "720.000 F", t: "+12%", i: Landmark, c: "text-blue-600 bg-blue-50" },
-                { l: "Commandes", v: "184 fiches", t: "+8%", i: ShoppingBag, c: "text-indigo-600 bg-indigo-50" },
-                { l: "Clients", v: "96 actifs", t: "+5%", i: Users, c: "text-emerald-600 bg-emerald-50" },
+                { l: "Caisse jour", v: "86.500 F", t: "demo", i: Landmark, c: "text-blue-600 bg-blue-50" },
+                { l: "Commandes", v: "27 fiches", t: "fictif", i: ShoppingBag, c: "text-indigo-600 bg-indigo-50" },
+                { l: "Clients", v: "14 actifs", t: "exemple", i: Users, c: "text-emerald-600 bg-emerald-50" },
               ].map((k) => (
                 <div key={k.l} className="rounded-lg border bg-background p-2 shadow-sm hover:border-slate-300 transition-colors">
                   <div className="flex items-center justify-between">
@@ -279,9 +273,9 @@ export function DashboardMockup() {
             {/* 👥 Ligne 2 : Les nouvelles mesures de performance opérationnelle du pressing */}
             <div className="mb-4 grid grid-cols-3 gap-2">
               {[
-                { l: "Top Agent", v: "Agent actif", t: "145 cmdes", i: UserCheck, c: "text-purple-600 bg-purple-50" },
-                { l: "Pointe", v: "18h - 20h", t: "110 cmdes", i: Clock, c: "text-amber-600 bg-amber-50" },
-                { l: "Canal Top", v: "Wave", t: "340.000 F", i: Wallet, c: "text-cyan-600 bg-cyan-50" },
+                { l: "Agent demo", v: "Awa Diop", t: "9 depots", i: UserCheck, c: "text-purple-600 bg-purple-50" },
+                { l: "Rush", v: "17h - 19h", t: "pic fictif", i: Clock, c: "text-amber-600 bg-amber-50" },
+                { l: "Paiement", v: "Wave", t: "42.000 F", i: Wallet, c: "text-cyan-600 bg-cyan-50" },
               ].map((k) => (
                 <div key={k.l} className="rounded-lg border bg-background p-2 shadow-sm hover:border-slate-300 transition-colors">
                   <div className="flex items-center justify-between">
@@ -297,8 +291,8 @@ export function DashboardMockup() {
             {/* Graphique de flux financier miniature (Correction CSS incluse) */}
             <div className="rounded-lg border bg-background p-3 shadow-sm">
               <div className="mb-2 flex items-center justify-between text-[11px] font-semibold text-slate-700">
-                <span>Volume d'affaires mensuel (FCFA)</span>
-                <span className="text-[9px] text-muted-foreground font-normal">Tendances</span>
+                <span>Exemple de flux de caisse</span>
+                <span className="text-[9px] text-muted-foreground font-normal">Données fictives</span>
               </div>
               <div className="flex h-16 items-end gap-1.5 pt-2">
                 {[40, 55, 48, 70, 62, 85, 78, 92, 70, 88, 95, 100].map((h, i) => (
@@ -314,14 +308,13 @@ export function DashboardMockup() {
         </div>
       </Card>
 
-      {/* Petit toast pop-up SMS de succès */}
       <Card className="absolute -bottom-5 -left-4 hidden gap-2.5 p-3 shadow-xl sm:flex sm:items-center bg-background/90 backdrop-blur-md animate-bounce duration-1000 border-emerald-100 border">
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 shrink-0">
           <CheckCircle2 className="h-4 w-4 text-emerald-600" />
         </div>
         <div>
-          <div className="text-[11px] font-bold text-slate-800">SMS Envoyé automatiquement</div>
-          <div className="text-[9px] text-muted-foreground">"Commande prête !" au client</div>
+          <div className="text-[11px] font-bold text-slate-800">Aperçu de notification</div>
+          <div className="text-[9px] text-muted-foreground">"Boubou prêt" pour client fictif</div>
         </div>
       </Card>
     </div>
@@ -685,7 +678,7 @@ function FinalCTA() {
               <Link to="/signup">Créer mon compte <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" /></Link>
             </Button>
             <Button size="lg" variant="outline" asChild className="h-12 border-white/20 bg-white/5 px-8 text-white hover:bg-white/10 hover:text-white">
-              <Link to="/dashboard">Tester la démo gratuite</Link>
+              <a href="#demo-preview">Voir la démo publique</a>
             </Button>
           </div>
         </div>
@@ -707,7 +700,7 @@ function Footer() {
           </div>
           <p className="text-xs leading-relaxed">Le logiciel de gestion de caisse et de relation client leader pour les pressings et blanchisseries au Sénégal.</p>
         </div>
-        <FooterCol title="Produit" links={[["Accueil", "/"], ["Fonctionnalités", "#features"], ["Tarifs", "#"], ["Démo Interactive", "/dashboard"]]} />
+        <FooterCol title="Produit" links={[["Accueil", "/"], ["Fonctionnalités", "#features"], ["Tarifs", "#"], ["Démo Interactive", "#demo-preview"]]} />
         <FooterCol title="Entreprise" links={[["À propos", "#"], ["Contactez-nous", "#"], ["Blog & Conseils", "#"]]} />
         <FooterCol title="Légal" links={[["Confidentialité des données", "#"], ["Conditions d'Utilisation", "#"]]} />
       </div>
@@ -757,3 +750,4 @@ function LandingPage() {
     </div>
   );
 }
+

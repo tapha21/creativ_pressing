@@ -7,6 +7,7 @@ import type {
   Order,
   PhotoItem,
   ReportsData,
+  Shop,
 } from "./types";
 import type { AuthSession } from "./auth";
 
@@ -35,6 +36,12 @@ export const pressingApi = {
 
   dashboard: () => apiRequest<DashboardSummary>("/api/dashboard"),
   reports: () => apiRequest<ReportsData>("/api/reports"),
+
+  shops: {
+    one: (id: string) => apiRequest<Shop>(`/api/shops/${id}`),
+    update: (id: string, payload: Partial<Shop> & Record<string, unknown>) =>
+      apiRequest<Shop>(`/api/shops/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  },
 
   clients: {
     list: () => apiRequest<Client[]>("/api/clients"),
@@ -70,9 +77,9 @@ export const pressingApi = {
 
   employees: {
     list: () => apiRequest<Employee[]>("/api/employees"),
-    create: (payload: Pick<Employee, "name" | "phone" | "role">) =>
+    create: (payload: Partial<Employee> & Record<string, unknown>) =>
       apiRequest<Employee>("/api/employees", { method: "POST", body: JSON.stringify(payload) }),
-    update: (id: string, payload: Partial<Employee>) =>
+    update: (id: string, payload: Partial<Employee> & Record<string, unknown>) =>
       apiRequest<Employee>(`/api/employees/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
     remove: (id: string) => apiRequest<void>(`/api/employees/${id}`, { method: "DELETE" }),
   },

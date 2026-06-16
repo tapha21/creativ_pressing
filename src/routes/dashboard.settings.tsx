@@ -1,157 +1,158 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { Store, Bell, MapPin, Phone, Mail, Coins, Save, ShieldAlert, MessageSquare, Landmark } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Building2, CalendarClock, Crown, Image, Mail, MapPin, Phone, Save, Store, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { getAuthSession, saveAuthSession } from "@/services/auth";
+import { pressingApi } from "@/services/pressing-api";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/settings")({ component: SettingsPage });
 
 function SettingsPage() {
-  const [isSaving, setIsSaving] = useState(false);
+  const queryClient = useQueryClient();
+  const session = getAuthSession();
+  const shopId = session?.shopId ?? "";
+  const isPremium = session?.subscriptionPlan === "Premium" || session?.subscriptionStatus === "Essai";
 
-  const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSaving(true);
-    
-    // Simulation d'une sauvegarde réseau rapide
-    setTimeout(() => {
-      setIsSaving(false);
-      toast.success("Configurations de la boutique enregistrées");
-    }, 800);
+  const { data: shop, isLoading } = useQuery({
+    queryKey: ["shop", shopId],
+    queryFn: () => pressingApi.shops.one(shopId),
+    enabled: Boolean(shopId),
+  });
+
+  const updateShop = useMutation({
+    mutationFn: (payload: Record<string, unknown>) => pressingApi.shops.update(shopId, payload),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ["shop", shopId] });
+      if (session) {
+        saveAuthSession({
+          ...session,
+          shopName: updated.name,
+          logoUrl: updated.logoUrl,
+          subscriptionPlan: updated.subscriptionPlan,
+          subscriptionStatus: updated.subscriptionStatus,
+          trialEndsAt: updated.trialEndsAt,
+          subscriptionEndsAt: updated.subscriptionEndsAt,
+        });
+      }
+      toast.success("Informations de l'entreprise enregistrees");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Enregistrement impossible"),
+  });
+
+  const handleSave = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    updateShop.mutate({
+      name: String(formData.get("name")),
+      ownerName: String(formData.get("ownerName")),
+      phone: String(formData.get("phone")),
+      city: String(formData.get("city")),
+      address: String(formData.get("address")),
+      email: String(formData.get("email")),
+      logoUrl: isPremium ? String(formData.get("logoUrl") ?? "") : shop?.logoUrl,
+      subscriptionPlan: shop?.subscriptionPlan,
+      subscriptionStatus: shop?.subscriptionStatus,
+      subscriptionEndsAt: shop?.subscriptionEndsAt,
+    });
   };
 
   return (
-    <div className="animate-fade-in max-w-3xl space-y-6 text-slate-900 antialiased">
-      {/* En-tête de page */}
-      <PageHeader 
-        title="Paramètres Généraux" 
-        subtitle="Pilotez les préférences de votre établissement et les canaux d'alerte" 
-      />
+    <div className="mx-auto w-full max-w-4xl space-y-4 pb-20 text-slate-900 sm:space-y-6 lg:pb-0">
+      <PageHeader title="Parametres" subtitle="Informations reelles de votre entreprise et abonnement." />
 
-      {/* 🏬 Fiche Profil de l'Établissement */}
-      <Card className="p-6 border-slate-200/80 shadow-sm bg-background">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-blue-50 text-primary">
-            <Store className="h-4 w-4" />
+      <Card className="overflow-hidden border-slate-200/80 bg-background shadow-sm">
+        <div className="grid gap-4 p-4 sm:p-6 lg:grid-cols-[1fr_280px]">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <div className="rounded-lg bg-blue-50 p-1.5 text-primary">
+                <Store className="h-4 w-4" />
+              </div>
+              <h3 className="text-base font-black tracking-tight">Entreprise</h3>
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              Ces informations servent au dashboard, aux recus et a l'identite de votre espace.
+            </p>
           </div>
-          <h3 className="font-bold text-slate-900 tracking-tight">Fiche d'identité du pressing</h3>
+
+          <div className="rounded-xl border bg-slate-50 p-3 text-sm">
+            <div className="flex items-center gap-2 font-bold text-slate-900">
+              <Crown className="h-4 w-4 text-amber-500" />
+              {shop?.subscriptionPlan ?? session?.subscriptionPlan ?? "Offre"}
+            </div>
+            <div className="mt-1 text-xs font-medium text-muted-foreground">
+              Etat : {shop?.subscriptionStatus ?? session?.subscriptionStatus ?? "-"}
+            </div>
+            <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+              <CalendarClock className="h-3.5 w-3.5" />
+              {shop?.subscriptionStatus === "Essai"
+                ? `Essai jusqu'au ${shop?.trialEndsAt ?? "-"}`
+                : `Fin abonnement ${shop?.subscriptionEndsAt ?? "-"}`}
+            </div>
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground mt-0.5 pl-8">Ces coordonnées figureront sur les reçus d'encaissement de vos clients.</p>
-        
-        <Separator className="my-4" />
-        
-        <form className="grid gap-4 sm:grid-cols-2" onSubmit={handleSave}>
-          
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-slate-700">Nom commercial</Label>
-            <Input defaultValue="Pressing Le Lys" className="h-10 border-slate-200" />
-          </div>
-          
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-slate-700">Ligne téléphonique directe</Label>
-            <div className="relative group">
-              <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
-              <Input defaultValue="+221 77 000 00 00" className="pl-9 h-10 border-slate-200" />
-            </div>
-          </div>
-          
+
+        <Separator />
+
+        <form onSubmit={handleSave} className="grid gap-4 p-4 sm:grid-cols-2 sm:p-6">
+          <Field icon={Store} name="name" label="Nom commercial" defaultValue={shop?.name} required />
+          <Field icon={User} name="ownerName" label="Responsable" defaultValue={shop?.ownerName} required />
+          <Field icon={Phone} name="phone" label="Telephone" defaultValue={shop?.phone} required />
+          <Field icon={Building2} name="city" label="Ville" defaultValue={shop?.city} required />
+          <Field icon={MapPin} name="address" label="Adresse" defaultValue={shop?.address} required className="sm:col-span-2" />
+          <Field icon={Mail} name="email" label="Email entreprise" defaultValue={shop?.email} type="email" required className="sm:col-span-2" />
+
           <div className="space-y-1.5 sm:col-span-2">
-            <Label className="text-xs font-semibold text-slate-700">Adresse géographique</Label>
-            <div className="relative group">
-              <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
-              <Input defaultValue="Rue 10, Sacré-Cœur, Dakar" className="pl-9 h-10 border-slate-200" />
+            <Label htmlFor="logoUrl" className="text-xs font-bold text-slate-700">Logo de l'application</Label>
+            <div className="relative">
+              <Image className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Input
+                id="logoUrl"
+                name="logoUrl"
+                defaultValue={shop?.logoUrl ?? ""}
+                disabled={!isPremium}
+                placeholder={isPremium ? "https://..." : "Disponible avec Premium"}
+                className="h-11 pl-9"
+              />
             </div>
+            {!isPremium && <p className="text-xs font-medium text-amber-600">Le changement de logo est reserve a l'offre Premium.</p>}
           </div>
-          
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-slate-700">Adresse e-mail de contact</Label>
-            <div className="relative group">
-              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
-              <Input type="email" defaultValue="contact@lelys.sn" className="pl-9 h-10 border-slate-200" />
-            </div>
-          </div>
-          
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-slate-700">Devise de compte</Label>
-            <div className="relative group">
-              <Coins className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
-              <Input defaultValue="FCFA" disabled className="pl-9 h-10 bg-slate-50/80 border-slate-200 text-slate-500 font-bold cursor-not-allowed" />
-            </div>
-          </div>
-          
-          <div className="sm:col-span-2 flex justify-end pt-2 border-t border-slate-100 mt-2">
-            <Button type="submit" disabled={isSaving} className="font-semibold h-10 gap-1.5 px-5 shadow-md shadow-primary/10">
+
+          <div className="sticky bottom-0 -mx-4 mt-2 border-t bg-background/95 p-4 backdrop-blur sm:static sm:col-span-2 sm:mx-0 sm:flex sm:justify-end sm:bg-transparent sm:p-0 sm:pt-4">
+            <Button type="submit" disabled={updateShop.isPending || isLoading} className="h-11 w-full gap-2 font-semibold sm:w-auto">
               <Save className="h-4 w-4" />
-              {isSaving ? "Sauvegarde..." : "Enregistrer les modifications"}
+              {updateShop.isPending ? "Sauvegarde..." : "Enregistrer"}
             </Button>
           </div>
         </form>
       </Card>
+    </div>
+  );
+}
 
-      {/* 🔔 Bloc Notifications Automatisées */}
-      <Card className="p-6 border-slate-200/80 shadow-sm bg-background">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-amber-50 text-amber-600">
-            <Bell className="h-4 w-4" />
-          </div>
-          <h3 className="font-bold text-slate-900 tracking-tight">Automatisation & Alertes système</h3>
-        </div>
-        <p className="text-xs text-muted-foreground mt-0.5 pl-8">Configurez les événements qui déclenchent des rappels en temps réel.</p>
-        
-        <Separator className="my-4" />
-        
-        <div className="divide-y divide-slate-100">
-          
-          {/* Ligne 1 : Commandes prêtes */}
-          <div className="flex items-start justify-between py-3.5 gap-4">
-            <div className="flex gap-3">
-              <div className="p-2 rounded-lg bg-slate-50 text-slate-500 mt-0.5">
-                <MessageSquare className="h-4 w-4" />
-              </div>
-              <div className="space-y-0.5">
-                <label className="text-sm font-bold text-slate-800 cursor-pointer" htmlFor="notify-ready">Alertes clients (Prêt)</label>
-                <p className="text-xs text-slate-400 font-medium">Envoyer automatiquement une notification lorsque le linge est lavé, repassé et disponible.</p>
-              </div>
-            </div>
-            <Switch id="notify-ready" defaultChecked />
-          </div>
+type FieldProps = {
+  icon: typeof Store;
+  name: string;
+  label: string;
+  defaultValue?: string | null;
+  type?: string;
+  required?: boolean;
+  className?: string;
+};
 
-          {/* Ligne 2 : Retards de livraison */}
-          <div className="flex items-start justify-between py-3.5 gap-4">
-            <div className="flex gap-3">
-              <div className="p-2 rounded-lg bg-slate-50 text-slate-500 mt-0.5">
-                <ShieldAlert className="h-4 w-4" />
-              </div>
-              <div className="space-y-0.5">
-                <label className="text-sm font-bold text-slate-800 cursor-pointer" htmlFor="notify-delay">Suivi des retards de traitement</label>
-                <p className="text-xs text-slate-400 font-medium">Notifier le gérant sur le tableau de bord si une commande dépasse la date de retrait fixée.</p>
-              </div>
-            </div>
-            <Switch id="notify-delay" defaultChecked />
-          </div>
-
-          {/* Ligne 3 : Alertes paiements */}
-          <div className="flex items-start justify-between py-3.5 gap-4">
-            <div className="flex gap-3">
-              <div className="p-2 rounded-lg bg-slate-50 text-slate-500 mt-0.5">
-                <Landmark className="h-4 w-4" />
-              </div>
-              <div className="space-y-0.5">
-                <label className="text-sm font-bold text-slate-800 cursor-pointer" htmlFor="notify-pay">Relances des impayés</label>
-                <p className="text-xs text-slate-400 font-medium">Signaler de façon persistante les vêtements récupérés mais non soldés en caisse.</p>
-              </div>
-            </div>
-            <Switch id="notify-pay" defaultChecked={false} />
-          </div>
-
-        </div>
-      </Card>
+function Field({ icon: Icon, name, label, defaultValue, type = "text", required, className }: FieldProps) {
+  return (
+    <div className={`space-y-1.5 ${className ?? ""}`}>
+      <Label htmlFor={name} className="text-xs font-bold text-slate-700">{label}</Label>
+      <div className="relative">
+        <Icon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <Input id={name} name={name} type={type} required={required} defaultValue={defaultValue ?? ""} className="h-11 pl-9" />
+      </div>
     </div>
   );
 }

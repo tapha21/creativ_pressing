@@ -5,6 +5,11 @@ export type AuthSession = {
   userName: string;
   email: string;
   role: string;
+  subscriptionPlan: "Basic" | "Standard" | "Premium";
+  subscriptionStatus: "Essai" | "Actif" | "Expire" | "Suspendu";
+  trialEndsAt?: string | null;
+  subscriptionEndsAt?: string | null;
+  logoUrl?: string | null;
 };
 
 const AUTH_KEY = "creativ-pressing-session";
@@ -31,4 +36,33 @@ export function clearAuthSession() {
 
 export function isPwaDisplayMode() {
   return window.matchMedia("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+}
+
+export function isSubscriptionUsable(session: AuthSession | null) {
+  if (!session) return false;
+  const today = new Date().toISOString().slice(0, 10);
+
+  if (session.subscriptionStatus === "Essai") {
+    return !session.trialEndsAt || session.trialEndsAt >= today;
+  }
+
+  if (session.subscriptionStatus === "Actif") {
+    return !session.subscriptionEndsAt || session.subscriptionEndsAt >= today;
+  }
+
+  return false;
+}
+
+export function canAccessFeature(session: AuthSession | null, feature: string) {
+  if (!isSubscriptionUsable(session)) return false;
+  if (!session) return false;
+
+  if (session.subscriptionStatus === "Essai") return true;
+
+  const plan = session.subscriptionPlan;
+  if (plan === "Premium") return true;
+  if (plan === "Standard") return feature !== "reports" && feature !== "gallery";
+  if (plan === "Basic") return ["dashboard", "clients", "orders", "settings"].includes(feature);
+
+  return false;
 }

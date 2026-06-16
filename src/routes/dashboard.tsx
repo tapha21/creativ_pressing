@@ -1,10 +1,11 @@
-import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Bell, Command, LogOut, Menu, Search, X } from "lucide-react";
+import { Bell, Command, Lock, LogOut, Menu, Search, X } from "lucide-react";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { clearAuthSession, getAuthSession } from "@/services/auth";
+import { canAccessFeature, clearAuthSession, getAuthSession, isSubscriptionUsable } from "@/services/auth";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Tableau de bord — Creativ Pressing" }] }),
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/dashboard")({
 
 function DashboardLayout() {
   const nav = useNavigate();
+  const path = useRouterState({ select: (state) => state.location.pathname });
   const [open, setOpen] = useState(false);
   const [session, setSession] = useState(() => getAuthSession());
 
@@ -25,6 +27,36 @@ function DashboardLayout() {
     setSession(currentSession);
   }, [nav]);
 
+  if (session && !isSubscriptionUsable(session)) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-slate-50 p-4">
+        <Card className="w-full max-w-md p-6 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
+            <Bell className="h-6 w-6" />
+          </div>
+          <h1 className="text-xl font-black tracking-tight text-slate-900">Abonnement expire</h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Votre periode d'essai ou votre abonnement mensuel est termine. L'acces sera reactive quand le super admin mettra votre abonnement a jour.
+          </p>
+          <div className="mt-5 rounded-lg border bg-slate-50 p-3 text-left text-xs font-medium text-slate-600">
+            <div>Boutique : {session.shopName}</div>
+            <div>Offre : {session.subscriptionPlan}</div>
+            <div>Etat : {session.subscriptionStatus}</div>
+          </div>
+          <Button
+            className="mt-5 w-full"
+            onClick={() => {
+              clearAuthSession();
+              nav({ to: "/login" });
+            }}
+          >
+            Retour connexion
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) setOpen(false);
@@ -32,6 +64,9 @@ function DashboardLayout() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const feature = getFeatureFromPath(path);
+  const canAccessCurrentPage = !session || canAccessFeature(session, feature);
 
   return (
     <div className="flex h-dvh min-h-dvh w-full overflow-hidden bg-slate-50/50 text-slate-900 antialiased">
@@ -83,11 +118,15 @@ function DashboardLayout() {
             <div className="flex items-center gap-3">
               <div className="hidden text-right sm:block">
                 <div className="text-sm font-semibold leading-tight text-slate-800">{session?.shopName ?? "Boutique"}</div>
-                <div className="text-xs font-medium text-muted-foreground">{session?.userName ?? "Compte actif"}</div>
+                <div className="text-xs font-medium text-muted-foreground">{session?.subscriptionPlan ?? "Compte actif"}</div>
               </div>
+              {session?.logoUrl ? (
+                <img src={session.logoUrl} alt={session.shopName} className="h-9 w-9 rounded-xl object-cover shadow-md" />
+              ) : (
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-xs font-bold text-white shadow-md shadow-blue-600/10">
                 {(session?.shopName ?? "CP").slice(0, 2).toUpperCase()}
               </div>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -106,10 +145,35 @@ function DashboardLayout() {
 
         <main className="flex-1 overflow-auto bg-slate-50/40 p-3 sm:p-6 lg:p-8">
           <div className="mx-auto max-w-7xl space-y-6">
-            <Outlet />
+            {canAccessCurrentPage ? <Outlet /> : <LockedFeature sessionPlan={session?.subscriptionPlan ?? "Basic"} />}
           </div>
         </main>
       </div>
     </div>
+  );
+}
+
+function getFeatureFromPath(path: string) {
+  if (path.includes("/clients")) return "clients";
+  if (path.includes("/orders")) return "orders";
+  if (path.includes("/expenses")) return "expenses";
+  if (path.includes("/employees")) return "employees";
+  if (path.includes("/reports")) return "reports";
+  if (path.includes("/gallery")) return "gallery";
+  if (path.includes("/settings")) return "settings";
+  return "dashboard";
+}
+
+function LockedFeature({ sessionPlan }: { sessionPlan: string }) {
+  return (
+    <Card className="mx-auto mt-12 max-w-md p-6 text-center shadow-sm">
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+        <Lock className="h-6 w-6" />
+      </div>
+      <h2 className="text-xl font-black tracking-tight text-slate-900">Fonction verrouillee</h2>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+        Cette page n'est pas incluse dans votre offre {sessionPlan}. Le super admin peut changer votre abonnement pour l'activer.
+      </p>
+    </Card>
   );
 }
