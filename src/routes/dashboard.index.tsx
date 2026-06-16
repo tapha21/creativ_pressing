@@ -122,38 +122,29 @@ function DashboardHome() {
             <p className="mt-0.5 text-xs text-muted-foreground">Derniers dépôts enregistrés en comptoir</p>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[780px] border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/70 text-xs uppercase tracking-wider text-slate-500">
-                <th className="px-4 py-3 text-left font-semibold">N° commande</th>
-                <th className="px-4 py-3 text-left font-semibold">Client</th>
-                <th className="px-4 py-3 text-left font-semibold">Montant</th>
-                <th className="px-4 py-3 text-left font-semibold">Statut</th>
-                <th className="px-4 py-3 text-left font-semibold">Retrait prévu</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {recentOrders.map((order) => (
-                <tr key={order.id} className="transition-colors hover:bg-slate-50/50">
-                  <td className="whitespace-nowrap px-4 py-3.5 text-xs font-bold text-primary">{order.id}</td>
-                  <td className="whitespace-nowrap px-4 py-3.5 font-semibold text-slate-800">{order.clientName}</td>
-                  <td className="whitespace-nowrap px-4 py-3.5 font-bold text-slate-900">{formatXOF(order.amount)}</td>
-                  <td className="whitespace-nowrap px-4 py-3.5">
-                    <Badge className={`rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${statusColor[order.status] || "bg-slate-100 text-slate-700"}`} variant="outline">
-                      {order.status}
-                    </Badge>
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3.5 text-xs font-medium text-slate-500">{order.deliveryAt}</td>
-                </tr>
-              ))}
-              {(recentOrders.length === 0 || isLoading || isError) && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center font-medium text-slate-400">{emptyMessage}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <div className="grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-3">
+          {recentOrders.map((order) => (
+            <Card key={order.id} className="border-slate-200 p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold uppercase tracking-wide text-primary">#{order.id}</div>
+                  <h3 className="mt-1 truncate text-sm font-black text-slate-900">{order.clientName}</h3>
+                  <p className="mt-2 text-xs font-medium text-slate-500">Retrait prevu : {order.deliveryAt}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-black text-slate-900">{formatXOF(order.amount)}</div>
+                  <Badge className={`mt-2 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${statusColor[order.status] || "bg-slate-100 text-slate-700"}`} variant="outline">
+                    {order.status}
+                  </Badge>
+                </div>
+              </div>
+            </Card>
+          ))}
+          {(recentOrders.length === 0 || isLoading || isError) && (
+            <Card className="border-dashed border-slate-200 p-8 text-center font-medium text-slate-400 sm:col-span-2 xl:col-span-3">
+              {emptyMessage}
+            </Card>
+          )}
         </div>
       </Card>
     </div>

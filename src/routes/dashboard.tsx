@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Lock, LogOut, Menu, Settings, ShoppingBag, Users, Wallet, LayoutDashboard, X } from "lucide-react";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
@@ -25,6 +25,14 @@ function DashboardLayout() {
     }
     setSession(currentSession);
   }, [nav]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) setOpen(false);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   if (session && !isSubscriptionUsable(session)) {
     return (
@@ -56,16 +64,11 @@ function DashboardLayout() {
     );
   }
 
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) setOpen(false);
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
   const feature = getFeatureFromPath(path);
   const canAccessCurrentPage = !session || canAccessFeature(session, feature);
+  const bottomCount = getVisibleMobileItems(session).length;
+  const accessibleCount = dashboardFeatures.filter((item) => canAccessFeature(session, item)).length;
+  const showMobileMenu = accessibleCount > bottomCount;
 
   return (
     <div className="flex h-dvh min-h-dvh w-full overflow-hidden bg-slate-50/50 text-slate-900 antialiased">
@@ -73,7 +76,7 @@ function DashboardLayout() {
         <DashboardSidebar />
       </aside>
 
-      <div className={`fixed inset-0 z-50 transition-opacity duration-300 lg:hidden ${open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`}>
+      <div className={`fixed inset-0 z-50 transition-opacity duration-300 lg:hidden ${open && showMobileMenu ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`}>
         <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
         <div className={`absolute inset-y-0 left-0 w-[min(18rem,85vw)] transform bg-card shadow-2xl transition-transform duration-300 ease-out ${open ? "translate-x-0" : "-translate-x-full"}`}>
           <DashboardSidebar onNavigate={() => setOpen(false)} />
@@ -83,15 +86,17 @@ function DashboardLayout() {
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-200/80 bg-background px-3 shadow-sm shadow-slate-100/40 sm:h-16 sm:px-4 lg:px-8">
           <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 shrink-0 text-slate-600 hover:bg-slate-100 lg:hidden"
-              onClick={() => setOpen(!open)}
-              aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
-            >
-              {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
+            {showMobileMenu && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0 text-slate-600 hover:bg-slate-100 lg:hidden"
+                onClick={() => setOpen(!open)}
+                aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
+              >
+                {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </Button>
+            )}
             <div className="min-w-0">
               <div className="truncate text-sm font-black leading-tight text-slate-900 sm:text-base">{session?.shopName ?? "Boutique"}</div>
               <div className="truncate text-[11px] font-semibold text-muted-foreground">{session?.subscriptionPlan ?? "Compte"}</div>
@@ -142,8 +147,14 @@ const mobileItems = [
   { to: "/dashboard/settings", label: "Reglages", icon: Settings, feature: "settings" },
 ];
 
+const dashboardFeatures = ["dashboard", "clients", "orders", "expenses", "employees", "reports", "gallery", "settings"];
+
+function getVisibleMobileItems(session: ReturnType<typeof getAuthSession>) {
+  return mobileItems.filter((item) => canAccessFeature(session, item.feature)).slice(0, 4);
+}
+
 function MobileBottomNav({ session, path }: { session: ReturnType<typeof getAuthSession>; path: string }) {
-  const visible = mobileItems.filter((item) => canAccessFeature(session, item.feature)).slice(0, 4);
+  const visible = getVisibleMobileItems(session);
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-background/95 px-2 pb-[env(safe-area-inset-bottom)] pt-1.5 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
@@ -151,16 +162,16 @@ function MobileBottomNav({ session, path }: { session: ReturnType<typeof getAuth
         {visible.map((item) => {
           const active = item.to === "/dashboard" ? path === item.to : path.startsWith(item.to);
           return (
-            <a
+            <Link
               key={item.to}
-              href={item.to}
+              to={item.to}
               className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-bold transition-colors ${
                 active ? "bg-blue-50 text-primary" : "text-slate-500"
               }`}
             >
               <item.icon className="h-5 w-5" />
               {item.label}
-            </a>
+            </Link>
           );
         })}
       </div>

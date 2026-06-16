@@ -174,7 +174,7 @@ function OrdersPage() {
           </div>
         </div>
 
-        <div className="grid gap-3 p-3 sm:hidden">
+        <div className="grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((order) => (
             <Card key={order.id} className="border-slate-200 p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
@@ -214,9 +214,15 @@ function OrdersPage() {
               </div>
             </Card>
           ))}
+          {(filtered.length === 0 || isLoading || isError) && (
+            <Card className="border-dashed border-slate-200 p-8 text-center font-medium text-slate-400 sm:col-span-2 xl:col-span-3">
+              <ShoppingBag className="mx-auto mb-2 h-6 w-6 text-slate-300" />
+              {emptyMessage}
+            </Card>
+          )}
         </div>
 
-        <div className="hidden overflow-x-auto sm:block">
+        <div className="hidden">
           <table className="w-full min-w-[980px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/70 text-xs uppercase tracking-wider text-slate-500">

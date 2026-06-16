@@ -14,6 +14,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { isPwaDisplayMode } from "@/services/auth";
+import { toast } from "sonner";
 
 
 export const Route = createFileRoute("/")({
@@ -78,6 +79,15 @@ function Navbar() {
   );
 }
 
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+};
+
+function scrollToDemo() {
+  document.getElementById("demo-preview")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function Hero() {
   return (
     <section className="relative overflow-hidden border-b" style={{ background: "var(--gradient-hero)" }}>
@@ -101,8 +111,8 @@ function Hero() {
             <Button size="lg" asChild className="h-12 px-7 text-base shadow-lg group">
               <Link to="/signup">Créer ma boutique gratuitement <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" /></Link>
             </Button>
-            <Button size="lg" variant="outline" asChild className="h-12 px-7 text-base bg-background/50 backdrop-blur-sm hover:bg-background">
-              <a href="#demo-preview"><PlayCircle className="mr-2 h-5 w-5 text-primary" /> Voir la demo</a>
+            <Button size="lg" variant="outline" type="button" onClick={scrollToDemo} className="h-12 px-7 text-base bg-background/50 backdrop-blur-sm hover:bg-background">
+              <PlayCircle className="mr-2 h-5 w-5 text-primary" /> Voir la demo
             </Button>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground pt-4">
@@ -119,7 +129,7 @@ function Hero() {
 }
 
 function InstallSection() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [iosHint, setIosHint] = useState(false);
   const appUrl = "https://creativ-pressing.vercel.app/";
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(appUrl)}`;
@@ -127,26 +137,44 @@ function InstallSection() {
   useEffect(() => {
     const handlePrompt = (event: Event) => {
       event.preventDefault();
-      setDeferredPrompt(event);
+      setDeferredPrompt(event as BeforeInstallPromptEvent);
+    };
+    const handleInstalled = () => {
+      toast.success("Creativ Pressing a ete ajoute a votre ecran d'accueil.");
     };
 
     window.addEventListener("beforeinstallprompt", handlePrompt);
-    return () => window.removeEventListener("beforeinstallprompt", handlePrompt);
+    window.addEventListener("appinstalled", handleInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handlePrompt);
+      window.removeEventListener("appinstalled", handleInstalled);
+    };
   }, []);
 
   const installAndroid = async () => {
-    if (!deferredPrompt) {
-      window.location.href = appUrl;
+    if (isPwaDisplayMode()) {
+      toast.success("L'application est deja installee sur cet appareil.");
       return;
     }
 
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice.catch(() => null);
+    if (!deferredPrompt) {
+      toast.message("Ouvrez le menu du navigateur puis choisissez Ajouter a l'ecran d'accueil.");
+      return;
+    }
+
+    await deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice.catch(() => null);
+    if (choice?.outcome === "accepted") {
+      toast.success("Application ajoutee a l'ecran d'accueil.");
+    } else {
+      toast.info("Installation annulee. Vous pouvez reessayer quand vous voulez.");
+    }
     setDeferredPrompt(null);
   };
 
   const installIos = () => {
     setIosHint(true);
+    toast.message("Sur iPhone, utilisez Partager puis Ajouter a l'ecran d'accueil.");
   };
 
   return (
@@ -245,7 +273,6 @@ export function DashboardMockup() {
                 <div className="text-xs font-bold text-foreground">Aperçu public sans connexion</div>
               </div>
               <div className="flex items-center gap-2">
-                <Bell className="h-3.5 w-3.5 text-muted-foreground cursor-pointer hover:text-foreground" />
                 <div className="h-6 w-6 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] text-white font-bold">CP</div>
               </div>
             </div>
@@ -305,16 +332,6 @@ export function DashboardMockup() {
               </div>
             </div>
           </main>
-        </div>
-      </Card>
-
-      <Card className="absolute -bottom-5 -left-4 hidden gap-2.5 p-3 shadow-xl sm:flex sm:items-center bg-background/90 backdrop-blur-md animate-bounce duration-1000 border-emerald-100 border">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 shrink-0">
-          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-        </div>
-        <div>
-          <div className="text-[11px] font-bold text-slate-800">Aperçu de notification</div>
-          <div className="text-[9px] text-muted-foreground">"Boubou prêt" pour client fictif</div>
         </div>
       </Card>
     </div>
