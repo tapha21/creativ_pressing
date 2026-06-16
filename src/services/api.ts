@@ -1,6 +1,9 @@
 import { getAuthSession } from "./auth";
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL ??
+  (import.meta.env.PROD ? "https://creativ-pressing-back.onrender.com" : "")
+).replace(/\/$/, "");
 
 type RequestOptions = RequestInit & {
   skipJsonHeader?: boolean;
