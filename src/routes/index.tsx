@@ -84,10 +84,6 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 };
 
-function scrollToDemo() {
-  document.getElementById("demo-preview")?.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
 function Hero() {
   return (
     <section className="relative overflow-hidden border-b" style={{ background: "var(--gradient-hero)" }}>
@@ -111,8 +107,8 @@ function Hero() {
             <Button size="lg" asChild className="h-12 px-7 text-base shadow-lg group">
               <Link to="/signup">Créer ma boutique gratuitement <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" /></Link>
             </Button>
-            <Button size="lg" variant="outline" type="button" onClick={scrollToDemo} className="h-12 px-7 text-base bg-background/50 backdrop-blur-sm hover:bg-background">
-              <PlayCircle className="mr-2 h-5 w-5 text-primary" /> Voir la demo
+            <Button size="lg" variant="outline" asChild className="h-12 px-7 text-base bg-background/50 backdrop-blur-sm hover:bg-background">
+              <Link to="/login"><PlayCircle className="mr-2 h-5 w-5 text-primary" /> Voir la demo</Link>
             </Button>
           </div>
           <div className="flex items-center gap-6 text-sm text-muted-foreground pt-4">
@@ -695,7 +691,7 @@ function FinalCTA() {
               <Link to="/signup">Créer mon compte <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" /></Link>
             </Button>
             <Button size="lg" variant="outline" asChild className="h-12 border-white/20 bg-white/5 px-8 text-white hover:bg-white/10 hover:text-white">
-              <a href="#demo-preview">Voir la démo publique</a>
+              <Link to="/login">Voir la démo publique</Link>
             </Button>
           </div>
         </div>

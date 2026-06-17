@@ -1,4 +1,5 @@
-import { getAuthSession } from "./auth";
+import { getAuthSession, isDemoSession } from "./auth";
+import { mockApiRequest } from "./demo-data";
 
 const API_BASE_URL = (
   import.meta.env.VITE_API_URL ??
@@ -20,6 +21,10 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const session = getAuthSession();
   const resolvedPath = withShopId(path, options, session?.shopId);
   const body = normalizeBody(options.body, options.preserveFormData);
+
+  if (isDemoSession(session)) {
+    return mockApiRequest<T>(path, options, body, session);
+  }
 
   if (!(body instanceof FormData) && !options.skipJsonHeader && !headers.has("content-type")) {
     headers.set("content-type", "application/json");

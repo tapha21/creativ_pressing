@@ -1,12 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, ArrowUpRight, Calendar, Layers, ShoppingBag, TrendingUp, Users, Wallet } from "lucide-react";
+import { Activity, ArrowUpRight, Calendar, Layers, ShoppingBag, TrendingUp, UserCog, Users, Wallet } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { formatXOF } from "@/services/api";
 import { pressingApi } from "@/services/pressing-api";
+import { canAccessFeature, getAuthSession } from "@/services/auth";
 
 export const Route = createFileRoute("/dashboard/")({
   component: DashboardHome,
@@ -38,6 +39,7 @@ const DashboardTooltip = ({ active, payload, label }: any) => {
 };
 
 function DashboardHome() {
+  const session = getAuthSession();
   const { data, isLoading, isError } = useQuery({
     queryKey: ["dashboard"],
     queryFn: pressingApi.dashboard,
@@ -53,6 +55,13 @@ function DashboardHome() {
   const revenueChart = data?.revenueChart ?? [];
   const ordersChart = data?.ordersChart ?? [];
   const recentOrders = data?.recentOrders ?? [];
+  const quickActions = [
+    { to: "/dashboard/orders", label: "Commandes", icon: ShoppingBag, feature: "orders", tone: "bg-blue-50 text-blue-700 border-blue-100" },
+    { to: "/dashboard/clients", label: "Clients", icon: Users, feature: "clients", tone: "bg-purple-50 text-purple-700 border-purple-100" },
+    { to: "/dashboard/expenses", label: "Caisse", icon: Wallet, feature: "expenses", tone: "bg-emerald-50 text-emerald-700 border-emerald-100" },
+    { to: "/dashboard/employees", label: "Employes", icon: UserCog, feature: "employees", tone: "bg-amber-50 text-amber-700 border-amber-100" },
+  ].filter((item) => canAccessFeature(session, item.feature));
+  const showQuickActions = quickActions.length > 0;
   const emptyMessage = isLoading
     ? "Chargement du tableau de bord..."
     : isError
@@ -147,6 +156,29 @@ function DashboardHome() {
           )}
         </div>
       </Card>
+
+      {showQuickActions && (
+        <section className="space-y-3">
+          <h3 className="text-sm font-black tracking-tight text-slate-900">Menus rapides</h3>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {quickActions.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className="group flex min-h-24 items-center gap-3 rounded-xl border border-slate-200 bg-background p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+              >
+                <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${item.tone}`}>
+                  <item.icon className="h-5 w-5" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-black text-slate-900">{item.label}</span>
+                </span>
+                <ArrowUpRight className="ml-auto h-4 w-4 shrink-0 text-slate-300 transition-colors group-hover:text-primary" />
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

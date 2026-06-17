@@ -66,9 +66,11 @@ function DashboardLayout() {
 
   const feature = getFeatureFromPath(path);
   const canAccessCurrentPage = !session || canAccessFeature(session, feature);
+  const isBasicPlan = session?.subscriptionPlan === "Basic";
   const bottomCount = getVisibleMobileItems(session).length;
   const accessibleCount = dashboardFeatures.filter((item) => canAccessFeature(session, item)).length;
-  const showMobileMenu = accessibleCount > bottomCount;
+  const showMobileMenu = !isBasicPlan && accessibleCount > bottomCount;
+  const showMobileBottomNav = bottomCount > 0;
 
   return (
     <div className="flex h-dvh min-h-dvh w-full overflow-hidden bg-slate-50/50 text-slate-900 antialiased">
@@ -129,11 +131,11 @@ function DashboardLayout() {
         </header>
 
         <main className="flex-1 overflow-auto bg-slate-50/40 p-3 sm:p-6 lg:p-8">
-          <div className="mx-auto max-w-7xl space-y-6 pb-20 lg:pb-0">
+          <div className={`mx-auto max-w-7xl space-y-6 ${showMobileBottomNav ? "pb-20" : "pb-4"} lg:pb-0`}>
             {canAccessCurrentPage ? <Outlet /> : <LockedFeature sessionPlan={session?.subscriptionPlan ?? "Basic"} />}
           </div>
         </main>
-        <MobileBottomNav session={session} path={path} />
+        {showMobileBottomNav && <MobileBottomNav session={session} path={path} />}
       </div>
     </div>
   );

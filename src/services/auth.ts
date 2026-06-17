@@ -57,12 +57,23 @@ export function canAccessFeature(session: AuthSession | null, feature: string) {
   if (!isSubscriptionUsable(session)) return false;
   if (!session) return false;
 
-  if (session.subscriptionStatus === "Essai") return true;
+  if (feature === "gallery") {
+    return isSuperAdmin(session);
+  }
 
   const plan = session.subscriptionPlan;
-  if (plan === "Premium") return true;
-  if (plan === "Standard") return feature !== "reports" && feature !== "gallery";
+  if (plan === "Premium") return ["dashboard", "clients", "orders", "expenses", "employees", "reports", "settings"].includes(feature);
+  if (plan === "Standard") return ["dashboard", "clients", "orders", "expenses", "employees", "settings"].includes(feature);
   if (plan === "Basic") return ["dashboard", "clients", "orders", "settings"].includes(feature);
 
   return false;
+}
+
+export function isSuperAdmin(session: AuthSession | null) {
+  if (!session) return false;
+  return ["super_admin", "superadmin", "Super Admin"].includes(session.role);
+}
+
+export function isDemoSession(session: AuthSession | null) {
+  return Boolean(session?.shopId.startsWith("demo-"));
 }

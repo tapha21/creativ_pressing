@@ -17,7 +17,7 @@ function SettingsPage() {
   const queryClient = useQueryClient();
   const session = getAuthSession();
   const shopId = session?.shopId ?? "";
-  const isPremium = session?.subscriptionPlan === "Premium" || session?.subscriptionStatus === "Essai";
+  const isPremium = session?.subscriptionPlan === "Premium";
 
   const { data: shop, isLoading } = useQuery({
     queryKey: ["shop", shopId],
@@ -58,6 +58,7 @@ function SettingsPage() {
       logoUrl: isPremium ? String(formData.get("logoUrl") ?? "") : shop?.logoUrl,
       subscriptionPlan: shop?.subscriptionPlan,
       subscriptionStatus: shop?.subscriptionStatus,
+      trialEndsAt: shop?.trialEndsAt,
       subscriptionEndsAt: shop?.subscriptionEndsAt,
     });
   };
@@ -87,6 +88,9 @@ function SettingsPage() {
             </div>
             <div className="mt-1 text-xs font-medium text-muted-foreground">
               Etat : {shop?.subscriptionStatus ?? session?.subscriptionStatus ?? "-"}
+            </div>
+            <div className="mt-1 text-xs font-medium text-muted-foreground">
+              Fin essai : {shop?.trialEndsAt ?? session?.trialEndsAt ?? "-"}
             </div>
             <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
               <CalendarClock className="h-3.5 w-3.5" />

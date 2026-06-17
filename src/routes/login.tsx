@@ -1,18 +1,41 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Sparkles, Mail, Lock, ArrowRight, Loader2, Eye, EyeOff } from "lucide-react";
+import { Sparkles, Mail, Lock, ArrowRight, Loader2, Eye, EyeOff, Crown, Layers, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { pressingApi } from "@/services/pressing-api";
 import { saveAuthSession } from "@/services/auth";
+import { createDemoSession } from "@/services/demo-data";
+import type { AuthSession } from "@/services/auth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Connexion — Creativ Pressing" }] }),
   component: LoginPage,
 });
+
+const demoPlans = [
+  {
+    plan: "Basic" as const,
+    icon: Layers,
+    title: "Basic",
+    tone: "border-blue-100 bg-blue-50/70 text-blue-700 hover:border-blue-200 hover:bg-blue-50",
+  },
+  {
+    plan: "Standard" as const,
+    icon: Wallet,
+    title: "Standard",
+    tone: "border-emerald-100 bg-emerald-50/70 text-emerald-700 hover:border-emerald-200 hover:bg-emerald-50",
+  },
+  {
+    plan: "Premium" as const,
+    icon: Crown,
+    title: "Premium",
+    tone: "border-amber-100 bg-amber-50/70 text-amber-700 hover:border-amber-200 hover:bg-amber-50",
+  },
+];
 
 function LoginPage() {
   const nav = useNavigate();
@@ -37,6 +60,13 @@ function LoginPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const startDemo = (plan: AuthSession["subscriptionPlan"]) => {
+    const session = createDemoSession(plan);
+    saveAuthSession(session);
+    toast.success(`Demo ${plan} lancee`);
+    nav({ to: "/dashboard" });
   };
 
   return (
@@ -151,6 +181,32 @@ function LoginPage() {
               )}
             </Button>
           </form>
+
+          <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm">
+            <div className="border-b border-slate-200 bg-background px-4 py-3">
+              <div className="text-xs font-black uppercase tracking-wider text-slate-500">Apercu client</div>
+            </div>
+            <div className="grid gap-2 p-3 sm:grid-cols-3">
+              {demoPlans.map((item) => (
+                <button
+                  key={item.plan}
+                  type="button"
+                  onClick={() => startDemo(item.plan)}
+                  className={`group flex min-h-28 flex-col items-start justify-between rounded-xl border p-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${item.tone}`}
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/80 shadow-sm transition-transform group-hover:scale-105">
+                    <item.icon className="h-4 w-4" />
+                  </span>
+                  <span>
+                    <span className="block text-sm font-black text-slate-900">Demo {item.title}</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold">
+                    Ouvrir <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div className="mt-8 text-center text-sm text-muted-foreground border-t border-slate-100 pt-6">
             Nouveau sur la plateforme ?{" "}
