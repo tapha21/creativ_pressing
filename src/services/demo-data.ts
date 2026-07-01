@@ -287,3 +287,4 @@ function buildRevenueChart(store: DemoStore) {
     { month: "Juin", revenu: Math.max(revenue, 210000), depenses: Math.max(expenses, 98000) },
   ];
 }
+

@@ -4,10 +4,10 @@ import { Lock, LogOut, Menu, Settings, ShoppingBag, Users, Wallet, LayoutDashboa
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { canAccessFeature, clearAuthSession, getAuthSession, isSubscriptionUsable } from "@/services/auth";
+import { canAccessFeature, clearAuthSession, getAuthSession, isEmployee, isSubscriptionUsable } from "@/services/auth";
 
 export const Route = createFileRoute("/dashboard")({
-  head: () => ({ meta: [{ title: "Tableau de bord — Creativ Pressing" }] }),
+  head: () => ({ meta: [{ title: "Tableau de bord - Creativ Pressing" }] }),
   component: DashboardLayout,
 });
 
@@ -23,8 +23,12 @@ function DashboardLayout() {
       nav({ to: "/login" });
       return;
     }
+    if (isEmployee(currentSession) && path === "/dashboard") {
+      nav({ to: "/dashboard/orders" });
+      return;
+    }
     setSession(currentSession);
-  }, [nav]);
+  }, [nav, path]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -205,3 +209,6 @@ function LockedFeature({ sessionPlan }: { sessionPlan: string }) {
     </Card>
   );
 }
+
+
+

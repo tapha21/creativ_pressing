@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, CalendarClock, Crown, Image, Mail, MapPin, Phone, Save, Store, User } from "lucide-react";
+import { Building2, CalendarClock, Crown, Headphones, Image, Mail, MapPin, Phone, Rocket, Save, Store, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -56,10 +56,6 @@ function SettingsPage() {
       address: String(formData.get("address")),
       email: String(formData.get("email")),
       logoUrl: isPremium ? String(formData.get("logoUrl") ?? "") : shop?.logoUrl,
-      subscriptionPlan: shop?.subscriptionPlan,
-      subscriptionStatus: shop?.subscriptionStatus,
-      trialEndsAt: shop?.trialEndsAt,
-      subscriptionEndsAt: shop?.subscriptionEndsAt,
     });
   };
 
@@ -101,6 +97,18 @@ function SettingsPage() {
           </div>
         </div>
 
+        <div className="grid gap-3 border-t border-slate-100 p-4 sm:grid-cols-2 sm:p-6">
+          <Button asChild variant="outline" className="h-11 justify-start gap-2 bg-background font-semibold">
+            <a href="https://wa.me/221762045174?text=Bonjour%20Creativ%20Pressing%2C%20je%20veux%20demander%20une%20mise%20a%20niveau%20de%20mon%20offre." target="_blank" rel="noreferrer">
+              <Rocket className="h-4 w-4 text-primary" /> Demander une mise à niveau
+            </a>
+          </Button>
+          <Button asChild variant="outline" className="h-11 justify-start gap-2 bg-background font-semibold">
+            <a href="https://wa.me/221762045174?text=Bonjour%20Creativ%20Pressing%2C%20j%27ai%20besoin%20du%20support%20client." target="_blank" rel="noreferrer">
+              <Headphones className="h-4 w-4 text-emerald-600" /> Support client WhatsApp
+            </a>
+          </Button>
+        </div>
         <Separator />
 
         <form onSubmit={handleSave} className="grid gap-4 p-4 sm:grid-cols-2 sm:p-6">
@@ -160,3 +168,5 @@ function Field({ icon: Icon, name, label, defaultValue, type = "text", required,
     </div>
   );
 }
+
+

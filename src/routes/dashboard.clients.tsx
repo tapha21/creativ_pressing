@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { isEmployee, getAuthSession } from "@/services/auth";
 import { pressingApi } from "@/services/pressing-api";
 import type { Client } from "@/services/types";
 import { toast } from "sonner";
@@ -18,6 +19,7 @@ type ClientPayload = Omit<Client, "id" | "createdAt" | "totalOrders">;
 
 function ClientsPage() {
   const queryClient = useQueryClient();
+  const employeeView = isEmployee(getAuthSession());
   const { data: list = [], isLoading, isError } = useQuery({
     queryKey: ["clients"],
     queryFn: pressingApi.clients.list,
@@ -169,14 +171,16 @@ function ClientsPage() {
                   <ShoppingBag className="h-3 w-3" /> {client.totalOrders}
                 </span>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <Button variant="outline" size="sm" onClick={() => { setEditing(client); setOpen(true); }}>
-                  <Pencil className="mr-1.5 h-3.5 w-3.5" /> Modifier
-                </Button>
-                <Button variant="outline" size="sm" className="text-destructive" onClick={() => handleDelete(client.id)}>
-                  <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Supprimer
-                </Button>
-              </div>
+              {!employeeView && (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <Button variant="outline" size="sm" onClick={() => { setEditing(client); setOpen(true); }}>
+                    <Pencil className="mr-1.5 h-3.5 w-3.5" /> Modifier
+                  </Button>
+                  <Button variant="outline" size="sm" className="text-destructive" onClick={() => handleDelete(client.id)}>
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Supprimer
+                  </Button>
+                </div>
+              )}
             </Card>
           ))}
           {(filtered.length === 0 || isLoading || isError) && (
@@ -248,3 +252,8 @@ function ClientsPage() {
     </div>
   );
 }
+
+
+
+
+

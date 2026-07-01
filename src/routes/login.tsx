@@ -1,221 +1,365 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Sparkles, Mail, Lock, ArrowRight, Loader2, Eye, EyeOff, Crown, Layers, Wallet } from "lucide-react";
+import type { FormEvent } from "react";
+import {
+  Sparkles,
+  Mail,
+  Lock,
+  ArrowRight,
+  Loader2,
+  Eye,
+  EyeOff,
+  Crown,
+  Layers,
+  Wallet,
+  ShieldCheck,
+  CheckCircle2,
+  BarChart3,
+  Users,
+  Clock3,
+} from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { pressingApi } from "@/services/pressing-api";
 import { saveAuthSession } from "@/services/auth";
-import { createDemoSession } from "@/services/demo-data";
-import type { AuthSession } from "@/services/auth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Connexion — Creativ Pressing" }] }),
+  head: () => ({
+    meta: [{ title: "Connexion - Creativ Pressing" }],
+  }),
   component: LoginPage,
 });
 
-const demoPlans = [
+const businessHighlights = [
   {
-    plan: "Basic" as const,
-    icon: Layers,
-    title: "Basic",
-    tone: "border-blue-100 bg-blue-50/70 text-blue-700 hover:border-blue-200 hover:bg-blue-50",
-  },
-  {
-    plan: "Standard" as const,
     icon: Wallet,
-    title: "Standard",
-    tone: "border-emerald-100 bg-emerald-50/70 text-emerald-700 hover:border-emerald-200 hover:bg-emerald-50",
+    title: "Caisse maîtrisée",
+    description: "Suivez vos encaissements, paiements et dépenses en temps réel.",
   },
   {
-    plan: "Premium" as const,
+    icon: Layers,
+    title: "Commandes centralisées",
+    description: "Chaque dépôt reste traçable, du lavage jusqu’au retrait client.",
+  },
+  {
     icon: Crown,
-    title: "Premium",
-    tone: "border-amber-100 bg-amber-50/70 text-amber-700 hover:border-amber-200 hover:bg-amber-50",
+    title: "Pilotage dirigeant",
+    description: "Gardez une vision claire sur votre rentabilité et votre équipe.",
   },
 ];
+
+const trustItems = [
+  "Accès sécurisé",
+  "Données centralisées",
+  "Interface mobile",
+];
+
+const dashboardStats = [
+  {
+    label: "Caisse du jour",
+    value: "86 500 F",
+    icon: Wallet,
+  },
+  {
+    label: "Commandes",
+    value: "27",
+    icon: Layers,
+  },
+  {
+    label: "Clients actifs",
+    value: "148",
+    icon: Users,
+  },
+];
+
+function BrandLogo({ light = false }: { light?: boolean }) {
+  return (
+    <Link to="/" className="group flex w-fit items-center gap-3">
+      <div
+        className={`flex h-11 w-11 items-center justify-center rounded-2xl shadow-lg transition-transform duration-300 group-hover:rotate-6 group-hover:scale-105 ${
+          light
+            ? "bg-white/15 shadow-black/10 backdrop-blur-md"
+            : "bg-sky-600 shadow-sky-600/20"
+        }`}
+      >
+        <Sparkles className="h-5 w-5 text-white" />
+      </div>
+
+      <div>
+        <span
+          className={`block text-lg font-black tracking-tight ${
+            light ? "text-white" : "text-slate-950"
+          }`}
+        >
+          Creativ Pressing
+        </span>
+      </div>
+    </Link>
+  );
+}
 
 function LoginPage() {
   const nav = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
     const formData = new FormData(event.currentTarget);
+    const email = String(formData.get("email") ?? "").trim();
+    const password = String(formData.get("password") ?? "");
+
     setLoading(true);
 
     try {
       const session = await pressingApi.auth.login({
-        email: String(formData.get("email")),
-        password: String(formData.get("password")),
+        email,
+        password,
       });
+
       saveAuthSession(session);
       toast.success(`Bienvenue ${session.userName}`);
       nav({ to: "/dashboard" });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Connexion impossible");
+      toast.error(
+        error instanceof Error ? error.message : "Connexion impossible",
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const startDemo = (plan: AuthSession["subscriptionPlan"]) => {
-    const session = createDemoSession(plan);
-    saveAuthSession(session);
-    toast.success(`Demo ${plan} lancee`);
-    nav({ to: "/dashboard" });
-  };
-
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-background antialiased">
-      {/* Panneau gauche : Uniquement visible sur desktop */}
-      <div 
-        className="hidden lg:flex flex-col justify-between p-12 text-primary-foreground relative overflow-hidden" 
-        style={{ background: "linear-gradient(135deg, #1e3a8a 0%, #312e81 100%)" }}
-      >
-        {/* Motifs de fond subtils pour casser le côté plat */}
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 30% 20%, white, transparent 40%), radial-gradient(circle at 80% 70%, white, transparent 50%)" }} />
-        
-        <Link to="/" className="flex items-center gap-2 group relative z-10 w-fit">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-md transition-transform group-hover:rotate-12 duration-300">
-            <Sparkles className="h-5 w-5 text-white" />
-          </div>
-          <span className="font-bold text-lg tracking-tight text-white">Creativ Pressing</span>
-        </Link>
-
-        <div className="relative z-10 max-w-md space-y-6">
-          <h2 className="text-4xl font-extrabold leading-[1.1] tracking-tight text-white text-balance">
-            Pilotez votre pressing en toute confiance.
-          </h2>
-          <p className="text-indigo-100 text-base leading-relaxed opacity-90">
-            Accédez à votre outil tout-en-un. Suivez vos revenus, pilotez votre personnel et gérez vos clients où que vous soyez au Sénégal.
-          </p>
-
-          {/* Petit élément de réassurance (Témoignage court) */}
-          <div className="pt-6 border-t border-white/10 mt-8">
-            <p className="text-sm italic text-indigo-200">"L'envoi automatique de SMS aux clients quand le linge est prêt a radicalement changé notre quotidien à la boutique."</p>
-            <p className="text-xs font-semibold text-white mt-2">— Ousmane D., Gérant de Pressing à Dakar</p>
-          </div>
+    <div className="min-h-screen overflow-hidden bg-slate-50 antialiased lg:grid lg:grid-cols-[1.08fr_0.92fr]">
+      <aside className="relative hidden min-h-screen overflow-hidden bg-sky-950 p-10 text-white lg:flex lg:flex-col lg:justify-between xl:p-12">
+        <div className="absolute inset-0">
+          <div className="absolute -left-24 top-10 h-80 w-80 rounded-full bg-sky-400/20 blur-3xl" />
+          <div className="absolute bottom-10 right-0 h-96 w-96 rounded-full bg-indigo-400/20 blur-3xl" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.16),transparent_30%),radial-gradient(circle_at_80%_80%,rgba(14,165,233,0.22),transparent_32%)]" />
+          <div className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(#fff_1px,transparent_1px),linear-gradient(to_right,#fff_1px,transparent_1px)] [background-size:44px_44px]" />
         </div>
 
-        <div className="text-xs text-indigo-200/60 relative z-10">
-          © 2026 Creativ Pressing. Propulsé avec passion.
+        <div className="relative z-10">
+          <BrandLogo light />
         </div>
-      </div>
 
-      {/* Panneau droit : Formulaire de connexion */}
-      <div className="flex items-center justify-center p-4 sm:p-8 md:p-12 bg-slate-50/50">
-        <Card className="w-full max-w-md p-6 sm:p-8 shadow-xl border-slate-200/60 bg-background/90 backdrop-blur-sm transition-all duration-300 hover:shadow-2xl">
-          {/* Logo mobile */}
-          <Link to="/" className="mb-8 flex items-center gap-2 lg:hidden w-fit">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-sm shadow-primary/20">
-              <Sparkles className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-slate-900 to-slate-800 bg-clip-text">Creativ Pressing</span>
-          </Link>
-
-          <div className="space-y-1.5 mb-6">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Bon retour !</h1>
-            <p className="text-sm text-muted-foreground">Renseignez vos identifiants pour accéder à la caisse.</p>
+        <div className="relative z-10 max-w-xl space-y-8">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-bold text-sky-100 shadow-lg shadow-black/10 backdrop-blur-md">
+            <ShieldCheck className="h-4 w-4 text-sky-300" />
+            Plateforme métier sécurisée
           </div>
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700 font-medium text-xs">Adresse Email</Label>
-              <div className="relative group">
-                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                <Input 
-                  id="email" 
-                  name="email"
-                  type="email" 
-                  required 
-                  placeholder="nom@votrepressing.sn" 
-                  className="pl-9 h-11 border-slate-200 focus-visible:ring-primary/20 transition-all text-sm" 
-                />
-              </div>
-            </div>
+          <div className="space-y-5">
+            <h1 className="max-w-lg text-5xl font-black leading-[1.02] tracking-tight xl:text-6xl">
+              Gérez votre pressing avec une vision claire.
+            </h1>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="pass" className="text-slate-700 font-medium text-xs">Mot de passe</Label>
-                <Link to="#" className="text-xs text-primary font-medium hover:underline">Mot de passe oublié ?</Link>
-              </div>
-              <div className="relative group">
-                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                <Input 
-                  id="pass" 
-                  name="password"
-                  type={showPassword ? "text" : "password"} 
-                  required 
-                  placeholder="••••••••" 
-                  className="pl-9 pr-10 h-11 border-slate-200 focus-visible:ring-primary/20 transition-all text-sm" 
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-slate-800 transition-colors"
+            <p className="max-w-md text-base font-medium leading-relaxed text-sky-100/75">
+              Connectez-vous à votre espace pour suivre vos commandes, vos
+              clients, votre caisse et vos performances depuis une interface
+              conçue pour le terrain.
+            </p>
+          </div>
+
+          <div className="grid max-w-lg gap-3">
+            {businessHighlights.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <div
+                  key={item.title}
+                  className="group rounded-3xl border border-white/10 bg-white/[0.08] p-4 shadow-xl shadow-black/10 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:bg-white/[0.12]"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-sky-200 ring-1 ring-white/10 transition-transform duration-300 group-hover:scale-105">
+                      <Icon className="h-5 w-5" />
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-black text-white">
+                        {item.title}
+                      </h3>
+                      <p className="mt-1 text-sm font-medium leading-relaxed text-sky-100/65">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          
+        </div>
+
+        <div className="relative z-10 flex items-center justify-between text-xs font-semibold text-sky-100/50">
+          <span>© 2026 Creativ Pressing</span>
+          <span>Conçu pour les pressings au Sénégal</span>
+        </div>
+      </aside>
+
+      <main className="relative flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:px-10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(14,165,233,0.16),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(37,99,235,0.10),transparent_30%)]" />
+
+        <div className="relative z-10 w-full max-w-md">
+          <div className="mb-8 lg:hidden">
+            <BrandLogo />
+          </div>
+
+          <Card className="overflow-hidden rounded-[2rem] border-slate-200/80 bg-white/90 shadow-2xl shadow-sky-950/10 backdrop-blur-xl">
+            <div className="border-b border-slate-100 bg-gradient-to-br from-white to-sky-50/70 p-6 sm:p-8">
+              <div className="mb-5 flex items-center justify-between">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-600 text-white shadow-lg shadow-sky-600/20">
+                  <Lock className="h-5 w-5" />
+                </div>
+
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  Sécurisé
+                </div>
+              </div>
+
+              <h2 className="text-3xl font-black tracking-tight text-slate-950">
+                Bon retour !
+              </h2>
+
+              <p className="mt-2 text-sm font-medium leading-relaxed text-slate-500">
+                Renseignez vos identifiants pour accéder à votre espace de
+                gestion.
+              </p>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                {trustItems.map((item) => (
+                  <span
+                    key={item}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-[11px] font-bold text-slate-600 shadow-sm ring-1 ring-slate-100"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5 text-sky-500" />
+                    {item}
+                  </span>
+                ))}
               </div>
             </div>
 
-            <Button 
-              type="submit" 
-              disabled={loading} 
-              className="w-full h-11 text-sm font-semibold shadow-lg shadow-primary/10 group transition-all duration-200 mt-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Vérification des accès...
-                </>
-              ) : (
-                <>
-                  Se connecter 
-                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </>
-              )}
-            </Button>
-          </form>
+            <div className="p-6 sm:p-8">
+              <form className="space-y-5" onSubmit={handleSubmit}>
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="email"
+                    className="text-xs font-bold uppercase tracking-wide text-slate-600"
+                  >
+                    Adresse email
+                  </Label>
 
-          <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm">
-            <div className="border-b border-slate-200 bg-background px-4 py-3">
-              <div className="text-xs font-black uppercase tracking-wider text-slate-500">Apercu client</div>
-            </div>
-            <div className="grid gap-2 p-3 sm:grid-cols-3">
-              {demoPlans.map((item) => (
-                <button
-                  key={item.plan}
-                  type="button"
-                  onClick={() => startDemo(item.plan)}
-                  className={`group flex min-h-28 flex-col items-start justify-between rounded-xl border p-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${item.tone}`}
+                  <div className="group relative">
+                    <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-sky-600" />
+
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      placeholder="nom@votrepressing.sn"
+                      className="h-12 rounded-2xl border-slate-200 bg-slate-50/70 pl-10 pr-4 text-sm font-medium shadow-sm transition-all placeholder:text-slate-400 focus-visible:border-sky-300 focus-visible:bg-white focus-visible:ring-sky-500/20"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <Label
+                      htmlFor="password"
+                      className="text-xs font-bold uppercase tracking-wide text-slate-600"
+                    >
+                      Mot de passe
+                    </Label>
+
+                    <a
+                      href="#"
+                      onClick={(event) => event.preventDefault()}
+                      className="text-xs font-bold text-sky-600 transition-colors hover:text-sky-700 hover:underline"
+                    >
+                      Mot de passe oublié ?
+                    </a>
+                  </div>
+
+                  <div className="group relative">
+                    <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-sky-600" />
+
+                    <Input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      autoComplete="current-password"
+                      placeholder="••••••••"
+                      className="h-12 rounded-2xl border-slate-200 bg-slate-50/70 pl-10 pr-12 text-sm font-medium shadow-sm transition-all placeholder:text-slate-400 focus-visible:border-sky-300 focus-visible:bg-white focus-visible:ring-sky-500/20"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((value) => !value)}
+                      className="absolute right-3.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                      aria-label={
+                        showPassword
+                          ? "Masquer le mot de passe"
+                          : "Afficher le mot de passe"
+                      }
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="group h-12 w-full rounded-2xl bg-sky-600 text-sm font-black shadow-lg shadow-sky-600/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-700 hover:shadow-xl hover:shadow-sky-600/25"
                 >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/80 shadow-sm transition-transform group-hover:scale-105">
-                    <item.icon className="h-4 w-4" />
-                  </span>
-                  <span>
-                    <span className="block text-sm font-black text-slate-900">Demo {item.title}</span>
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold">
-                    Ouvrir <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Vérification des accès...
+                    </>
+                  ) : (
+                    <>
+                      Se connecter
+                      <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </>
+                  )}
+                </Button>
+              </form>
 
-          <div className="mt-8 text-center text-sm text-muted-foreground border-t border-slate-100 pt-6">
-            Nouveau sur la plateforme ?{" "}
-            <Link to="/signup" className="font-semibold text-primary hover:text-indigo-600 transition-colors">
-              Créer ma boutique gratuitement
-            </Link>
-          </div>
-        </Card>
-      </div>
+              <div className="my-7 flex items-center gap-4">
+                <div className="h-px flex-1 bg-slate-100" />
+                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                  ou
+                </span>
+                <div className="h-px flex-1 bg-slate-100" />
+              </div>
+
+              <Link
+                to="/signup"
+                className="flex h-12 w-full items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm font-black text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
+              >
+                Créer ma boutique gratuitement
+              </Link>
+
+              
+            </div>
+          </Card>
+        </div>
+      </main>
     </div>
   );
 }

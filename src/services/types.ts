@@ -38,6 +38,7 @@ export interface Employee {
   name: string;
   role: "Propriétaire" | "Employé";
   phone: string;
+  email?: string;
   joinedAt: string;
   active: boolean;
 }

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Calendar, Pencil, Phone, Plus, Trash2, User, Users } from "lucide-react";
+import { Calendar, Lock, Pencil, Phone, Plus, Trash2, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,7 @@ function EmployeesPage() {
       setOpen(false);
       setEditing(null);
     },
-    onError: () => toast.error("Impossible d'enregistrer l'employé"),
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Impossible d'enregistrer l'employé"),
   });
 
   const deleteEmployee = useMutation({
@@ -43,7 +43,7 @@ function EmployeesPage() {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       toast.success("Employé retiré");
     },
-    onError: () => toast.error("Impossible de retirer cet employé"),
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Impossible de retirer cet employé"),
   });
 
   const onSave = (event: React.FormEvent<HTMLFormElement>) => {
@@ -56,6 +56,7 @@ function EmployeesPage() {
         phone: String(formData.get("phone")),
         role: String(formData.get("role")) as Employee["role"],
         email: String(formData.get("email") || ""),
+        password: String(formData.get("password") || ""),
         joinedAt: String(formData.get("joinedAt") || editing?.joinedAt || new Date().toISOString().slice(0, 10)),
         active: editing?.active ?? true,
       },
@@ -102,10 +103,19 @@ function EmployeesPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" name="email" type="email" defaultValue={(editing as Employee & { email?: string } | null)?.email ?? ""} className="h-10" />
+                  <Input id="email" name="email" type="email" defaultValue={editing?.email ?? ""} className="h-10" />
                 </div>
+                {!editing && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="password">Mot de passe</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <Input id="password" name="password" type="password" required className="h-10 pl-9" />
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-1.5">
-                  <Label htmlFor="joinedAt">Date d'arrivee</Label>
+                  <Label htmlFor="joinedAt">Date d'arrivée</Label>
                   <Input id="joinedAt" name="joinedAt" type="date" defaultValue={editing?.joinedAt ?? new Date().toISOString().slice(0, 10)} className="h-10" />
                 </div>
                 <div className="space-y-1.5">
