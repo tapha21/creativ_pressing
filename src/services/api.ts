@@ -1,4 +1,4 @@
-import { getAuthSession, isDemoSession } from "./auth";
+import { clearAuthSession, getAuthSession, isDemoSession } from "./auth";
 import { mockApiRequest } from "./demo-data";
 
 const API_BASE_URL = (
@@ -19,8 +19,9 @@ export function formatXOF(value: number) {
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers = new Headers(options.headers);
   const session = getAuthSession();
-  const resolvedPath = withShopId(path, options, session?.shopId);
+  const resolvedPath = withShopId(path, options, session?.shopId ?? undefined);
   const body = normalizeBody(options.body, options.preserveFormData);
+  const isAuthPath = path.startsWith("/api/auth");
 
   if (isDemoSession(session)) {
     return mockApiRequest<T>(path, options, body, session);
@@ -30,6 +31,10 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     headers.set("content-type", "application/json");
   }
 
+  if (session?.token && options.auth !== false && !isAuthPath && !headers.has("authorization")) {
+    headers.set("authorization", `Bearer ${session.token}`);
+  }
+
   const response = await fetch(`${API_BASE_URL}${resolvedPath}`, {
     ...options,
     body,
@@ -37,6 +42,17 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   });
 
   if (!response.ok) {
+    // Only 401 means "this session is no longer valid" (missing/expired token, or the
+    // shop got deactivated) and should force a logout. A 403 just means this particular
+    // resource isn't allowed for the current role (e.g. an employee hitting an
+    // owner-only endpoint) and must not blow away an otherwise valid session.
+    if (response.status === 401 && session && !isAuthPath) {
+      clearAuthSession();
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+    }
+
     const message = await readErrorMessage(response);
     throw new Error(message || `Erreur API ${response.status}`);
   }

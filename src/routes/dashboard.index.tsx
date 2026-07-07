@@ -43,6 +43,7 @@ function DashboardHome() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["dashboard"],
     queryFn: pressingApi.dashboard,
+    enabled: canAccessFeature(session, "dashboard"),
   });
 
   const kpis = [

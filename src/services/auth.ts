@@ -1,15 +1,17 @@
 export type AuthSession = {
-  shopId: string;
-  shopName: string;
+  token: string;
+  shopId: string | null;
+  shopName: string | null;
   userId: string;
   userName: string;
   email: string;
   role: string;
-  subscriptionPlan: "Basic" | "Standard" | "Premium";
-  subscriptionStatus: "Essai" | "Actif" | "Expire" | "Suspendu";
+  subscriptionPlan: "Basic" | "Standard" | "Premium" | null;
+  subscriptionStatus: "Essai" | "Actif" | "Expire" | "Suspendu" | null;
   trialEndsAt?: string | null;
   subscriptionEndsAt?: string | null;
   logoUrl?: string | null;
+  active?: boolean | null;
 };
 
 const AUTH_KEY = "creativ-pressing-session";
@@ -40,6 +42,8 @@ export function isPwaDisplayMode() {
 
 export function isSubscriptionUsable(session: AuthSession | null) {
   if (!session) return false;
+  if (isPlatformAdmin(session)) return true;
+  if (session.active === false) return false;
   const today = new Date().toISOString().slice(0, 10);
 
   if (session.subscriptionStatus === "Essai") {
@@ -57,16 +61,12 @@ export function canAccessFeature(session: AuthSession | null, feature: string) {
   if (!isSubscriptionUsable(session)) return false;
   if (!session) return false;
 
-  if (feature === "gallery") {
-    return isSuperAdmin(session);
-  }
-
   if (isEmployee(session)) {
     return ["clients", "orders"].includes(feature);
   }
 
   const plan = session.subscriptionPlan;
-  if (plan === "Premium") return ["dashboard", "clients", "orders", "expenses", "employees", "reports", "settings"].includes(feature);
+  if (plan === "Premium") return ["dashboard", "clients", "orders", "expenses", "employees", "reports", "gallery", "settings"].includes(feature);
   if (plan === "Standard") return ["dashboard", "clients", "orders", "expenses", "employees", "settings"].includes(feature);
   if (plan === "Basic") return ["dashboard", "clients", "orders", "settings"].includes(feature);
 
@@ -75,20 +75,19 @@ export function canAccessFeature(session: AuthSession | null, feature: string) {
 
 export function isOwnerOrAdmin(session: AuthSession | null) {
   if (!session) return false;
-  return ["Propriétaire", "OWNER", "Gérant", "Admin", "Super Admin", "super_admin", "superadmin"].includes(session.role);
+  return ["Propriétaire", "Administrateur"].includes(session.role);
 }
 
 export function isEmployee(session: AuthSession | null) {
   if (!session) return false;
-  return ["Employé", "EMPLOYEE"].includes(session.role);
+  return session.role === "Employé";
 }
 
-export function isSuperAdmin(session: AuthSession | null) {
+export function isPlatformAdmin(session: AuthSession | null) {
   if (!session) return false;
-  return ["super_admin", "superadmin", "Super Admin"].includes(session.role);
+  return session.role === "Administrateur";
 }
 
 export function isDemoSession(session: AuthSession | null) {
-  return Boolean(session?.shopId.startsWith("demo-"));
+  return Boolean(session?.shopId?.startsWith("demo-"));
 }
-

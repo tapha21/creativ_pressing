@@ -14,13 +14,14 @@ type Body = BodyInit | null | undefined;
 
 const today = "2026-06-17";
 
-export function createDemoSession(plan: AuthSession["subscriptionPlan"]): AuthSession {
+export function createDemoSession(plan: NonNullable<AuthSession["subscriptionPlan"]>): AuthSession {
   const shopId = `demo-${plan.toLowerCase()}`;
   const trialEndsAt = "2026-07-17";
 
   seedDemoStore(shopId, plan, trialEndsAt);
 
   return {
+    token: `demo-token-${plan.toLowerCase()}`,
     shopId,
     shopName: `Demo Pressing ${plan}`,
     userId: `demo-user-${plan.toLowerCase()}`,
@@ -32,13 +33,15 @@ export function createDemoSession(plan: AuthSession["subscriptionPlan"]): AuthSe
     trialEndsAt,
     subscriptionEndsAt: null,
     logoUrl: null,
+    active: true,
   };
 }
 
-export async function mockApiRequest<T>(path: string, options: RequestInit = {}, body?: Body, session?: AuthSession | null): Promise<T> {
-  if (!session?.shopId.startsWith("demo-")) {
+export async function mockApiRequest<T>(path: string, options: RequestInit = {}, body?: Body, rawSession?: AuthSession | null): Promise<T> {
+  if (!rawSession?.shopId?.startsWith("demo-")) {
     throw new Error("Session demo introuvable");
   }
+  const session = rawSession as AuthSession & { shopId: string };
 
   const method = (options.method ?? "GET").toUpperCase();
   const store = loadStore(session);
@@ -60,13 +63,13 @@ export async function mockApiRequest<T>(path: string, options: RequestInit = {},
   const collection = getCollection(cleanPath);
   if (collection) {
     const { name, id, upload } = collection;
-    const list = store[name] as Array<Record<string, unknown>>;
+    const list = store[name] as unknown as Array<Record<string, unknown>>;
 
     if (method === "GET" && !id) return list as T;
 
     if (method === "POST" && !id) {
       const created = createItem(name, payload, store, upload);
-      (store[name] as Array<Record<string, unknown>>).unshift(created);
+      (store[name] as unknown as Array<Record<string, unknown>>).unshift(created);
       saveStore(session.shopId, store);
       return created as T;
     }
@@ -152,13 +155,13 @@ function payloadFromBody(body: Body): Record<string, unknown> {
   return {};
 }
 
-function seedDemoStore(shopId: string, plan: AuthSession["subscriptionPlan"], trialEndsAt: string) {
+function seedDemoStore(shopId: string, plan: NonNullable<AuthSession["subscriptionPlan"]>, trialEndsAt: string) {
   if (localStorage.getItem(storeKey(shopId))) return;
   saveStore(shopId, buildInitialStore(shopId, plan, trialEndsAt));
 }
 
-function loadStore(session: AuthSession) {
-  seedDemoStore(session.shopId, session.subscriptionPlan, session.trialEndsAt ?? "2026-07-17");
+function loadStore(session: AuthSession & { shopId: string }) {
+  seedDemoStore(session.shopId, session.subscriptionPlan ?? "Basic", session.trialEndsAt ?? "2026-07-17");
   return JSON.parse(localStorage.getItem(storeKey(session.shopId)) ?? "{}") as DemoStore;
 }
 
@@ -170,7 +173,7 @@ function storeKey(shopId: string) {
   return `creativ-pressing-demo-store:${shopId}`;
 }
 
-function buildInitialStore(shopId: string, plan: AuthSession["subscriptionPlan"], trialEndsAt: string): DemoStore {
+function buildInitialStore(shopId: string, plan: NonNullable<AuthSession["subscriptionPlan"]>, trialEndsAt: string): DemoStore {
   const clients: Client[] = [
     { id: "CL-1001", name: "Awa Diop", phone: "+221 77 123 45 67", address: "Mermoz", city: "Dakar", createdAt: "2026-06-01", totalOrders: 4 },
     { id: "CL-1002", name: "Mamadou Fall", phone: "+221 76 222 18 90", address: "Centre-ville", city: "Thies", createdAt: "2026-06-03", totalOrders: 2 },

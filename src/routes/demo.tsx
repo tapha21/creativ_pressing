@@ -39,7 +39,7 @@ const demoPlans = [
 function DemoPage() {
   const nav = useNavigate();
 
-  const startDemo = (plan: AuthSession["subscriptionPlan"]) => {
+  const startDemo = (plan: NonNullable<AuthSession["subscriptionPlan"]>) => {
     const session = createDemoSession(plan);
     saveAuthSession(session);
     toast.success(`Démo ${plan} lancée`);

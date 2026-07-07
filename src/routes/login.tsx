@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { pressingApi } from "@/services/pressing-api";
-import { saveAuthSession } from "@/services/auth";
+import { isPlatformAdmin, saveAuthSession } from "@/services/auth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
@@ -124,7 +124,7 @@ function LoginPage() {
 
       saveAuthSession(session);
       toast.success(`Bienvenue ${session.userName}`);
-      nav({ to: "/dashboard" });
+      nav({ to: isPlatformAdmin(session) ? "/admin" : "/dashboard" });
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Connexion impossible",

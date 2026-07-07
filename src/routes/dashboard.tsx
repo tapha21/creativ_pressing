@@ -4,7 +4,7 @@ import { Lock, LogOut, Menu, Settings, ShoppingBag, Users, Wallet, LayoutDashboa
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { canAccessFeature, clearAuthSession, getAuthSession, isEmployee, isSubscriptionUsable } from "@/services/auth";
+import { canAccessFeature, clearAuthSession, getAuthSession, isEmployee, isPlatformAdmin, isSubscriptionUsable } from "@/services/auth";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Tableau de bord - Creativ Pressing" }] }),
@@ -23,6 +23,10 @@ function DashboardLayout() {
       nav({ to: "/login" });
       return;
     }
+    if (isPlatformAdmin(currentSession)) {
+      nav({ to: "/admin" });
+      return;
+    }
     if (isEmployee(currentSession) && path === "/dashboard") {
       nav({ to: "/dashboard/orders" });
       return;
@@ -39,20 +43,25 @@ function DashboardLayout() {
   }, []);
 
   if (session && !isSubscriptionUsable(session)) {
+    const isBlocked = session.active === false;
     return (
       <div className="flex min-h-dvh items-center justify-center bg-slate-50 p-4">
         <Card className="w-full max-w-md p-6 text-center shadow-sm">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
             <Lock className="h-6 w-6" />
           </div>
-          <h1 className="text-xl font-black tracking-tight text-slate-900">Abonnement expire</h1>
+          <h1 className="text-xl font-black tracking-tight text-slate-900">
+            {isBlocked ? "Compte bloqué" : "Abonnement expiré"}
+          </h1>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Votre periode d'essai ou votre abonnement mensuel est termine. L'acces sera reactive quand le super admin mettra votre abonnement a jour.
+            {isBlocked
+              ? "Votre compte a été bloqué par l'administrateur de la plateforme. Contactez le support pour en connaître la raison."
+              : "Votre periode d'essai ou votre abonnement mensuel est termine. L'acces sera reactive quand l'administrateur mettra votre abonnement a jour."}
           </p>
           <div className="mt-5 rounded-lg border bg-slate-50 p-3 text-left text-xs font-medium text-slate-600">
             <div>Boutique : {session.shopName}</div>
             <div>Offre : {session.subscriptionPlan}</div>
-            <div>Etat : {session.subscriptionStatus}</div>
+            <div>Etat : {isBlocked ? "Bloqué" : session.subscriptionStatus}</div>
           </div>
           <Button
             className="mt-5 w-full"
@@ -112,7 +121,7 @@ function DashboardLayout() {
           <div className="flex shrink-0 items-center gap-2 sm:gap-4 sm:pl-4">
             <div className="flex items-center gap-3">
               {session?.logoUrl ? (
-                <img src={session.logoUrl} alt={session.shopName} className="h-9 w-9 rounded-xl object-cover shadow-md" />
+                <img src={session.logoUrl} alt={session.shopName ?? "Boutique"} className="h-9 w-9 rounded-xl object-cover shadow-md" />
               ) : (
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-xs font-bold text-white shadow-md shadow-blue-600/10">
                 {(session?.shopName ?? "CP").slice(0, 2).toUpperCase()}

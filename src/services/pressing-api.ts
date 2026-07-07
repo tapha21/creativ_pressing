@@ -38,9 +38,17 @@ export const pressingApi = {
   reports: () => apiRequest<ReportsData>("/api/reports"),
 
   shops: {
+    list: (status?: string) =>
+      apiRequest<Shop[]>(`/api/shops${status ? `?status=${encodeURIComponent(status)}` : ""}`),
     one: (id: string) => apiRequest<Shop>(`/api/shops/${id}`),
     update: (id: string, payload: Partial<Shop> & Record<string, unknown>) =>
       apiRequest<Shop>(`/api/shops/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+    updateSubscription: (
+      id: string,
+      payload: { subscriptionPlan?: string; subscriptionStatus?: string; subscriptionEndsAt?: string | null },
+    ) => apiRequest<Shop>(`/api/shops/${id}/subscription`, { method: "PATCH", body: JSON.stringify(payload) }),
+    setActive: (id: string, active: boolean) =>
+      apiRequest<Shop>(`/api/shops/${id}/active`, { method: "PATCH", body: JSON.stringify({ active }) }),
   },
 
   clients: {

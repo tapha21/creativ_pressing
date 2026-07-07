@@ -25,7 +25,7 @@ export function DashboardSidebar({ onNavigate }: { onNavigate?: () => void }) {
     <aside className="flex h-full w-full shrink-0 flex-col border-r bg-card lg:w-64">
       <Link to="/" className="flex h-16 items-center gap-2 border-b px-4">
         {session?.logoUrl ? (
-          <img src={session.logoUrl} alt={session.shopName} className="h-8 w-8 rounded-lg object-cover" />
+          <img src={session.logoUrl} alt={session.shopName ?? "Creativ Pressing"} className="h-8 w-8 rounded-lg object-cover" />
         ) : (
           <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: "var(--gradient-primary)" }}>
             <Sparkles className="h-4 w-4 text-primary-foreground" />
