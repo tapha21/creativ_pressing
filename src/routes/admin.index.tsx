@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Ban, Building2, CalendarClock, CheckCircle2, Clock3, Mail, MapPin, Phone, Search, ShieldAlert, Store } from "lucide-react";
+import { Ban, Building2, CalendarClock, CheckCircle2, Clock3, Crown, Mail, MapPin, Phone, Search, ShieldAlert, ShoppingBag, Sparkles, Store, UserPlus, Users, Wallet } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { formatXOF } from "@/services/api";
 import { pressingApi } from "@/services/pressing-api";
 import type { Shop } from "@/services/types";
 import { toast } from "sonner";
@@ -30,6 +31,10 @@ function AdminIndexPage() {
   const { data: shops = [], isLoading, isError } = useQuery({
     queryKey: ["shops"],
     queryFn: () => pressingApi.shops.list(),
+  });
+  const { data: platformStats } = useQuery({
+    queryKey: ["shops-stats"],
+    queryFn: pressingApi.shops.stats,
   });
 
   const [search, setSearch] = useState("");
@@ -66,6 +71,17 @@ function AdminIndexPage() {
     };
   }, [shops]);
 
+  const insights = useMemo(() => {
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    return {
+      basic: shops.filter((s) => s.subscriptionPlan === "Basic").length,
+      standard: shops.filter((s) => s.subscriptionPlan === "Standard").length,
+      premium: shops.filter((s) => s.subscriptionPlan === "Premium").length,
+      newThisWeek: shops.filter((s) => new Date(s.createdAt).getTime() >= weekAgo).length,
+      cities: new Set(shops.map((s) => s.city).filter(Boolean)).size,
+    };
+  }, [shops]);
+
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
     return shops.filter((shop) => {
@@ -94,6 +110,26 @@ function AdminIndexPage() {
         <StatCard icon={CalendarClock} label="Expirés" value={counts.expire} accent="text-rose-600 bg-rose-50" onClick={() => setStatusFilter("Expire")} />
         <StatCard icon={ShieldAlert} label="Bloqués" value={counts.bloque} accent="text-slate-600 bg-slate-100" />
       </div>
+
+      <div>
+        <h3 className="mb-3 text-sm font-black tracking-tight text-slate-900">KPI plateforme</h3>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <StatCard icon={Users} label="Clients (tous pressings)" value={platformStats?.totalClients ?? 0} accent="text-blue-600 bg-blue-50" />
+          <StatCard icon={ShoppingBag} label="Commandes (tous pressings)" value={platformStats?.totalOrders ?? 0} accent="text-indigo-600 bg-indigo-50" />
+          <StatCard icon={Wallet} label="CA plateforme (mois)" value={formatXOF(platformStats?.monthlyRevenue ?? 0)} accent="text-emerald-600 bg-emerald-50" />
+          <StatCard icon={UserPlus} label="Nouveaux (7 jours)" value={insights.newThisWeek} accent="text-amber-600 bg-amber-50" />
+          <StatCard icon={MapPin} label="Villes couvertes" value={insights.cities} accent="text-purple-600 bg-purple-50" />
+        </div>
+      </div>
+
+      <Card className="border-slate-200/80 bg-background p-4 shadow-sm">
+        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">Répartition par offre</h3>
+        <div className="grid grid-cols-3 gap-3">
+          <PlanBar icon={Sparkles} label="Basic" value={insights.basic} total={counts.total} tone="bg-blue-500" />
+          <PlanBar icon={Crown} label="Standard" value={insights.standard} total={counts.total} tone="bg-emerald-500" />
+          <PlanBar icon={Crown} label="Premium" value={insights.premium} total={counts.total} tone="bg-amber-500" />
+        </div>
+      </Card>
 
       <Card className="border-slate-200/80 bg-background p-4 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -168,7 +204,7 @@ function StatCard({
 }: {
   icon: typeof Building2;
   label: string;
-  value: number;
+  value: number | string;
   accent?: string;
   onClick?: () => void;
 }) {
@@ -180,9 +216,38 @@ function StatCard({
       <div className={`mb-2 inline-flex h-9 w-9 items-center justify-center rounded-xl ${accent}`}>
         <Icon className="h-4 w-4" />
       </div>
-      <div className="text-2xl font-black tracking-tight text-slate-900">{value}</div>
+      <div className="truncate text-2xl font-black tracking-tight text-slate-900">{value}</div>
       <div className="text-xs font-semibold text-muted-foreground">{label}</div>
     </Card>
+  );
+}
+
+function PlanBar({
+  icon: Icon,
+  label,
+  value,
+  total,
+  tone,
+}: {
+  icon: typeof Sparkles;
+  label: string;
+  value: number;
+  total: number;
+  tone: string;
+}) {
+  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+        <span className="flex items-center gap-1.5">
+          <Icon className="h-3.5 w-3.5 text-slate-400" /> {label}
+        </span>
+        <span>{value}</span>
+      </div>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+        <div className={`h-full rounded-full ${tone}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
   );
 }
 

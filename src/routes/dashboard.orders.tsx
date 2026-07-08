@@ -35,6 +35,26 @@ const payColor: Record<PaymentStatus, string> = {
   "Non payé": "bg-rose-50 text-rose-700 ring-rose-600/10",
 };
 
+function isWithinPeriod(dateStr: string, period: (typeof PERIODS)[number]) {
+  if (period === "Tout") return true;
+  const date = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return true;
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  if (period === "Aujourd'hui") {
+    return date.getTime() === today.getTime();
+  }
+  if (period === "Cette semaine") {
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 6);
+    return date.getTime() >= weekAgo.getTime() && date.getTime() <= today.getTime();
+  }
+  // "Ce mois"
+  return date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth();
+}
+
 function OrdersPage() {
   const queryClient = useQueryClient();
   const { data: list = [], isLoading, isError } = useQuery({
@@ -52,9 +72,10 @@ function OrdersPage() {
       list.filter(
         (order) =>
           (filter === "Tous" || order.status === filter) &&
+          isWithinPeriod(order.receivedAt, period) &&
           `${order.id} ${order.clientName} ${order.clientPhone ?? ""} ${order.items}`.toLowerCase().includes(search.toLowerCase()),
       ),
-    [list, filter, search],
+    [list, filter, period, search],
   );
 
   const saveOrder = useMutation({
@@ -174,7 +195,7 @@ function OrdersPage() {
           </div>
         </div>
 
-        <div className="grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 p-3 sm:grid-cols-2 lg:hidden">
           {filtered.map((order) => (
             <Card key={order.id} className="border-slate-200 p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
@@ -222,7 +243,7 @@ function OrdersPage() {
           )}
         </div>
 
-        <div className="hidden">
+        <div className="hidden lg:block lg:overflow-x-auto">
           <table className="w-full min-w-[980px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/70 text-xs uppercase tracking-wider text-slate-500">

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, ArrowUpRight, Calendar, Layers, ShoppingBag, TrendingUp, UserCog, Users, Wallet } from "lucide-react";
+import { Activity, AlertTriangle, ArrowUpRight, Calendar, CheckCircle2, FileText, Images, Layers, PackageCheck, Settings, ShoppingBag, TrendingUp, UserCog, Users, Wallet } from "lucide-react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -53,14 +53,19 @@ function DashboardHome() {
     { label: "Dépenses engagées", value: formatXOF(data?.monthlyExpenses ?? 0), trend: data?.expensesTrend ?? "0%", icon: Wallet, bg: "bg-rose-50 text-rose-600 border-rose-100" },
   ];
 
+  const isBasicPlan = session?.subscriptionPlan === "Basic";
   const revenueChart = data?.revenueChart ?? [];
   const ordersChart = data?.ordersChart ?? [];
   const recentOrders = data?.recentOrders ?? [];
+  const overdueOrders = data?.overdueOrders ?? 0;
   const quickActions = [
-    { to: "/dashboard/orders", label: "Commandes", icon: ShoppingBag, feature: "orders", tone: "bg-blue-50 text-blue-700 border-blue-100" },
-    { to: "/dashboard/clients", label: "Clients", icon: Users, feature: "clients", tone: "bg-purple-50 text-purple-700 border-purple-100" },
-    { to: "/dashboard/expenses", label: "Caisse", icon: Wallet, feature: "expenses", tone: "bg-emerald-50 text-emerald-700 border-emerald-100" },
-    { to: "/dashboard/employees", label: "Employes", icon: UserCog, feature: "employees", tone: "bg-amber-50 text-amber-700 border-amber-100" },
+    { to: "/dashboard/orders", label: "Commandes", icon: ShoppingBag, feature: "orders", tone: "from-blue-500 to-blue-600" },
+    { to: "/dashboard/clients", label: "Clients", icon: Users, feature: "clients", tone: "from-purple-500 to-purple-600" },
+    { to: "/dashboard/expenses", label: "Caisse", icon: Wallet, feature: "expenses", tone: "from-emerald-500 to-emerald-600" },
+    { to: "/dashboard/employees", label: "Employes", icon: UserCog, feature: "employees", tone: "from-amber-500 to-amber-600" },
+    { to: "/dashboard/reports", label: "Rapports", icon: FileText, feature: "reports", tone: "from-indigo-500 to-indigo-600" },
+    { to: "/dashboard/gallery", label: "Galerie", icon: Images, feature: "gallery", tone: "from-pink-500 to-pink-600" },
+    { to: "/dashboard/settings", label: "Parametres", icon: Settings, feature: "settings", tone: "from-slate-500 to-slate-600" },
   ].filter((item) => canAccessFeature(session, item.feature));
   const showQuickActions = quickActions.length > 0;
   const emptyMessage = isLoading
@@ -72,6 +77,24 @@ function DashboardHome() {
   return (
     <div className="space-y-6 animate-fade-in text-slate-900 antialiased">
       <PageHeader title="Tableau de bord" subtitle="Situation globale et état des flux de votre pressing." />
+
+      {overdueOrders > 0 && (
+        <Link
+          to="/dashboard/orders"
+          className="flex items-center gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 shadow-sm transition-colors hover:bg-rose-100/70"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600">
+            <AlertTriangle className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-black text-rose-700">
+              {overdueOrders} commande{overdueOrders > 1 ? "s" : ""} en retard de livraison
+            </p>
+            <p className="text-xs font-medium text-rose-600/80">Cliquez pour consulter et régulariser ces dépôts.</p>
+          </div>
+          <ArrowUpRight className="h-4 w-4 shrink-0 text-rose-400" />
+        </Link>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {kpis.map((kpi) => (
@@ -109,20 +132,34 @@ function DashboardHome() {
           </div>
         </Card>
 
-        <Card className="border-slate-200/80 bg-background p-5 shadow-sm">
-          <ChartHeader icon={Layers} title="Flux des dépôts" subtitle="Volume de commandes" />
-          <div className="h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={ordersChart} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="day" stroke="#94a3b8" fontSize={11} fontWeight={600} tickLine={false} axisLine={false} dy={10} />
-                <YAxis stroke="#94a3b8" fontSize={11} fontWeight={600} tickLine={false} axisLine={false} />
-                <Tooltip content={<DashboardTooltip />} />
-                <Bar name="Commandes" dataKey="commandes" fill="#4f46e5" radius={[5, 5, 0, 0]} maxBarSize={32} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
+        {isBasicPlan ? (
+          <Card className="border-slate-200/80 bg-background p-5 shadow-sm">
+            <ChartHeader icon={Layers} title="Résumé du jour" subtitle="Aperçu rapide de l'activité" />
+            <div className="space-y-3">
+              <DaySummaryRow icon={PackageCheck} label="Dépôts aujourd'hui" value={data?.todayDeposits ?? 0} tone="bg-blue-50 text-blue-600" />
+              <DaySummaryRow icon={CheckCircle2} label="Prêts à livrer" value={data?.readyForPickup ?? 0} tone="bg-emerald-50 text-emerald-600" />
+              <DaySummaryRow icon={AlertTriangle} label="En retard" value={overdueOrders} tone="bg-rose-50 text-rose-600" />
+            </div>
+            <p className="mt-4 rounded-lg bg-amber-50 p-3 text-xs font-medium text-amber-700">
+              Les graphiques détaillés de flux sont inclus à partir de l'offre Standard.
+            </p>
+          </Card>
+        ) : (
+          <Card className="border-slate-200/80 bg-background p-5 shadow-sm">
+            <ChartHeader icon={Layers} title="Flux des dépôts" subtitle="Volume de commandes" />
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={ordersChart} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="day" stroke="#94a3b8" fontSize={11} fontWeight={600} tickLine={false} axisLine={false} dy={10} />
+                  <YAxis stroke="#94a3b8" fontSize={11} fontWeight={600} tickLine={false} axisLine={false} />
+                  <Tooltip content={<DashboardTooltip />} />
+                  <Bar name="Commandes" dataKey="commandes" fill="#4f46e5" radius={[5, 5, 0, 0]} maxBarSize={32} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        )}
       </div>
 
       <Card className="overflow-hidden border-slate-200/80 bg-background shadow-sm">
@@ -161,25 +198,39 @@ function DashboardHome() {
       {showQuickActions && (
         <section className="space-y-3">
           <h3 className="text-sm font-black tracking-tight text-slate-900">Menus rapides</h3>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {quickActions.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
-                className="group flex min-h-24 items-center gap-3 rounded-xl border border-slate-200 bg-background p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+                className="group flex min-h-24 flex-col items-start gap-3 rounded-2xl border border-slate-200 bg-background p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
               >
-                <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${item.tone}`}>
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm ${item.tone}`}>
                   <item.icon className="h-5 w-5" />
                 </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-black text-slate-900">{item.label}</span>
+                <span className="flex w-full items-center justify-between gap-1">
+                  <span className="text-sm font-black text-slate-900">{item.label}</span>
+                  <ArrowUpRight className="h-4 w-4 shrink-0 text-slate-300 transition-colors group-hover:text-primary" />
                 </span>
-                <ArrowUpRight className="ml-auto h-4 w-4 shrink-0 text-slate-300 transition-colors group-hover:text-primary" />
               </Link>
             ))}
           </div>
         </section>
       )}
+    </div>
+  );
+}
+
+function DaySummaryRow({ icon: Icon, label, value, tone }: { icon: typeof PackageCheck; label: string; value: number; tone: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+      <div className="flex min-w-0 items-center gap-2.5">
+        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${tone}`}>
+          <Icon className="h-4 w-4" />
+        </span>
+        <span className="truncate text-sm font-semibold text-slate-700">{label}</span>
+      </div>
+      <span className="text-lg font-black text-slate-900">{value}</span>
     </div>
   );
 }

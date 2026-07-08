@@ -1,29 +1,42 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Building2, CalendarClock, Crown, Headphones, Image, Mail, MapPin, Phone, Rocket, Save, Store, User } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Building2, CalendarClock, Crown, Headphones, Link2, Loader2, Mail, MapPin, Phone, Rocket, Save, Store, Trash2, Upload, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { resolveMediaUrl } from "@/services/api";
 import { getAuthSession, saveAuthSession } from "@/services/auth";
 import { pressingApi } from "@/services/pressing-api";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/settings")({ component: SettingsPage });
 
+const MAX_LOGO_FILE_BYTES = 5 * 1024 * 1024;
+
 function SettingsPage() {
   const queryClient = useQueryClient();
   const session = getAuthSession();
   const shopId = session?.shopId ?? "";
   const isPremium = session?.subscriptionPlan === "Premium";
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(session?.logoUrl ?? null);
+  const [logoMode, setLogoMode] = useState<"upload" | "url">("upload");
 
   const { data: shop, isLoading } = useQuery({
     queryKey: ["shop", shopId],
     queryFn: () => pressingApi.shops.one(shopId),
     enabled: Boolean(shopId),
   });
+
+  useEffect(() => {
+    if (shop) {
+      setLogoUrl(shop.logoUrl ?? null);
+    }
+  }, [shop]);
 
   const updateShop = useMutation({
     mutationFn: (payload: Record<string, unknown>) => pressingApi.shops.update(shopId, payload),
@@ -45,6 +58,36 @@ function SettingsPage() {
     onError: (error) => toast.error(error instanceof Error ? error.message : "Enregistrement impossible"),
   });
 
+  const uploadLogo = useMutation({
+    mutationFn: (file: File) => pressingApi.shops.uploadLogo(shopId, file),
+    onSuccess: (updated) => {
+      setLogoUrl(updated.logoUrl ?? null);
+      queryClient.invalidateQueries({ queryKey: ["shop", shopId] });
+      if (session) {
+        saveAuthSession({ ...session, logoUrl: updated.logoUrl });
+      }
+      toast.success("Logo mis à jour");
+    },
+    onError: (error) => toast.error(error instanceof Error ? error.message : "Envoi du logo impossible"),
+  });
+
+  const onLogoFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Merci de choisir un fichier image");
+      return;
+    }
+    if (file.size > MAX_LOGO_FILE_BYTES) {
+      toast.error("Image trop lourde (5 Mo maximum)");
+      return;
+    }
+
+    uploadLogo.mutate(file);
+  };
+
   const handleSave = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -55,7 +98,7 @@ function SettingsPage() {
       city: String(formData.get("city")),
       address: String(formData.get("address")),
       email: String(formData.get("email")),
-      logoUrl: isPremium ? String(formData.get("logoUrl") ?? "") : shop?.logoUrl,
+      logoUrl: isPremium ? logoUrl : shop?.logoUrl,
     });
   };
 
@@ -119,20 +162,81 @@ function SettingsPage() {
           <Field icon={MapPin} name="address" label="Adresse" defaultValue={shop?.address} required className="sm:col-span-2" />
           <Field icon={Mail} name="email" label="Email entreprise" defaultValue={shop?.email} type="email" required className="sm:col-span-2" />
 
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="logoUrl" className="text-xs font-bold text-slate-700">Logo de l'application</Label>
-            <div className="relative">
-              <Image className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                id="logoUrl"
-                name="logoUrl"
-                defaultValue={shop?.logoUrl ?? ""}
-                disabled={!isPremium}
-                placeholder={isPremium ? "https://..." : "Disponible avec Premium"}
-                className="h-11 pl-9"
-              />
-            </div>
-            {!isPremium && <p className="text-xs font-medium text-amber-600">Le changement de logo est reserve a l'offre Premium.</p>}
+          <div className="space-y-2 sm:col-span-2">
+            <Label className="text-xs font-bold text-slate-700">Logo de l'application</Label>
+
+            {!isPremium ? (
+              <div className="flex items-center gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
+                  <Store className="h-6 w-6" />
+                </div>
+                <p className="text-xs font-medium text-amber-600">
+                  L'upload d'un logo personnalisé est réservé à l'offre Premium.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex flex-col items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:flex-row">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                    {logoUrl ? (
+                      <img src={resolveMediaUrl(logoUrl) ?? undefined} alt="Aperçu du logo" className="h-full w-full object-cover" />
+                    ) : (
+                      <Store className="h-6 w-6 text-slate-300" />
+                    )}
+                  </div>
+
+                  <div className="flex flex-1 flex-wrap items-center gap-2">
+                    <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={onLogoFileSelected} />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadLogo.isPending}
+                      className="h-9 gap-1.5 bg-background font-semibold"
+                    >
+                      {uploadLogo.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                      {uploadLogo.isPending ? "Envoi..." : "Choisir une image"}
+                    </Button>
+                    {logoUrl && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setLogoUrl(null)}
+                        className="h-9 gap-1.5 bg-background font-semibold text-destructive"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> Retirer
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setLogoMode(logoMode === "url" ? "upload" : "url")}
+                      className="h-9 gap-1.5 text-xs font-semibold text-muted-foreground"
+                    >
+                      <Link2 className="h-3.5 w-3.5" /> {logoMode === "url" ? "Utiliser un fichier" : "Coller une URL"}
+                    </Button>
+                  </div>
+                </div>
+
+                {logoMode === "url" && (
+                  <Input
+                    value={logoUrl ?? ""}
+                    onChange={(event) => setLogoUrl(event.target.value || null)}
+                    placeholder="https://..."
+                    className="h-11"
+                  />
+                )}
+
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  {logoMode === "upload"
+                    ? "Formats image, 5 Mo max — le fichier est envoyé et enregistré immédiatement."
+                    : "L'URL est enregistrée avec le reste du formulaire."}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="sticky bottom-0 -mx-4 mt-2 border-t bg-background/95 p-4 backdrop-blur sm:static sm:col-span-2 sm:mx-0 sm:flex sm:justify-end sm:bg-transparent sm:p-0 sm:pt-4">

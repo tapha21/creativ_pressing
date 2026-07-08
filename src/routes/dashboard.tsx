@@ -4,6 +4,7 @@ import { Lock, LogOut, Menu, Settings, ShoppingBag, Users, Wallet, LayoutDashboa
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { resolveMediaUrl } from "@/services/api";
 import { canAccessFeature, clearAuthSession, getAuthSession, isEmployee, isPlatformAdmin, isSubscriptionUsable } from "@/services/auth";
 
 export const Route = createFileRoute("/dashboard")({
@@ -79,10 +80,9 @@ function DashboardLayout() {
 
   const feature = getFeatureFromPath(path);
   const canAccessCurrentPage = !session || canAccessFeature(session, feature);
-  const isBasicPlan = session?.subscriptionPlan === "Basic";
   const bottomCount = getVisibleMobileItems(session).length;
   const accessibleCount = dashboardFeatures.filter((item) => canAccessFeature(session, item)).length;
-  const showMobileMenu = !isBasicPlan && accessibleCount > bottomCount;
+  const showMobileMenu = accessibleCount > bottomCount;
   const showMobileBottomNav = bottomCount > 0;
 
   return (
@@ -121,7 +121,7 @@ function DashboardLayout() {
           <div className="flex shrink-0 items-center gap-2 sm:gap-4 sm:pl-4">
             <div className="flex items-center gap-3">
               {session?.logoUrl ? (
-                <img src={session.logoUrl} alt={session.shopName ?? "Boutique"} className="h-9 w-9 rounded-xl object-cover shadow-md" />
+                <img src={resolveMediaUrl(session.logoUrl) ?? undefined} alt={session.shopName ?? "Boutique"} className="h-9 w-9 rounded-xl object-cover shadow-md" />
               ) : (
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-xs font-bold text-white shadow-md shadow-blue-600/10">
                 {(session?.shopName ?? "CP").slice(0, 2).toUpperCase()}
@@ -173,19 +173,23 @@ function MobileBottomNav({ session, path }: { session: ReturnType<typeof getAuth
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-background/95 px-2 pb-[env(safe-area-inset-bottom)] pt-1.5 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
-      <div className="mx-auto grid max-w-md" style={{ gridTemplateColumns: `repeat(${visible.length}, minmax(0, 1fr))` }}>
+      <div className="mx-auto grid max-w-md gap-1" style={{ gridTemplateColumns: `repeat(${visible.length}, minmax(0, 1fr))` }}>
         {visible.map((item) => {
           const active = item.to === "/dashboard" ? path === item.to : path.startsWith(item.to);
           return (
             <Link
               key={item.to}
               to={item.to}
-              className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-bold transition-colors ${
-                active ? "bg-blue-50 text-primary" : "text-slate-500"
-              }`}
+              className="flex min-h-14 flex-col items-center justify-center gap-1 py-1 text-[11px] font-bold text-slate-400 transition-colors"
             >
-              <item.icon className="h-5 w-5" />
-              {item.label}
+              <span
+                className={`flex h-9 w-9 items-center justify-center rounded-2xl transition-all ${
+                  active ? "scale-105 bg-primary text-primary-foreground shadow-md shadow-primary/25" : "text-slate-400"
+                }`}
+              >
+                <item.icon className="h-[18px] w-[18px]" />
+              </span>
+              <span className={active ? "text-primary" : "text-slate-500"}>{item.label}</span>
             </Link>
           );
         })}

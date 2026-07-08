@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Building2, MapPin, Pencil, Phone, Plus, Search, ShoppingBag, Trash2, User } from "lucide-react";
+import { Building2, MapPin, Map as MapIcon, Pencil, Phone, Plus, Search, ShoppingBag, Trash2, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,41 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/dashboard/clients")({ component: ClientsPage });
 
 type ClientPayload = Omit<Client, "id" | "createdAt" | "totalOrders">;
+
+const AVATAR_TONES = [
+  "bg-blue-50 text-blue-700",
+  "bg-purple-50 text-purple-700",
+  "bg-emerald-50 text-emerald-700",
+  "bg-amber-50 text-amber-700",
+  "bg-rose-50 text-rose-700",
+  "bg-cyan-50 text-cyan-700",
+];
+
+function avatarTone(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i += 1) {
+    hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  }
+  return AVATAR_TONES[hash % AVATAR_TONES.length];
+}
+
+function topCity(list: Client[]) {
+  if (list.length === 0) return "-";
+  const counts = new Map<string, number>();
+  list.forEach((client) => {
+    if (!client.city) return;
+    counts.set(client.city, (counts.get(client.city) ?? 0) + 1);
+  });
+  let best = "-";
+  let bestCount = 0;
+  counts.forEach((count, city) => {
+    if (count > bestCount) {
+      best = city;
+      bestCount = count;
+    }
+  });
+  return best;
+}
 
 function ClientsPage() {
   const queryClient = useQueryClient();
@@ -32,6 +67,9 @@ function ClientsPage() {
     () => list.filter((c) => `${c.name} ${c.phone} ${c.city} ${c.address}`.toLowerCase().includes(search.toLowerCase())),
     [list, search],
   );
+
+  const totalOrdersCumulated = useMemo(() => list.reduce((sum, c) => sum + c.totalOrders, 0), [list]);
+  const bestCity = useMemo(() => topCity(list), [list]);
 
   const saveClient = useMutation({
     mutationFn: (payload: { id?: string; data: ClientPayload }) =>
@@ -141,6 +179,36 @@ function ClientsPage() {
         }
       />
 
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Card className="flex items-center gap-3 border-slate-200/80 bg-background p-4 shadow-sm">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+            <Users className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Total clients</p>
+            <p className="text-xl font-black text-slate-900">{list.length}</p>
+          </div>
+        </Card>
+        <Card className="flex items-center gap-3 border-slate-200/80 bg-background p-4 shadow-sm">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+            <ShoppingBag className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Commandes cumulées</p>
+            <p className="text-xl font-black text-slate-900">{totalOrdersCumulated}</p>
+          </div>
+        </Card>
+        <Card className="flex items-center gap-3 border-slate-200/80 bg-background p-4 shadow-sm">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <MapIcon className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Ville principale</p>
+            <p className="truncate text-xl font-black text-slate-900">{bestCity}</p>
+          </div>
+        </Card>
+      </div>
+
       <Card className="overflow-hidden border-slate-200/80 bg-background shadow-sm">
         <div className="border-b border-slate-100 bg-slate-50/50 p-4 sm:p-5">
           <div className="relative w-full max-w-sm">
@@ -149,12 +217,12 @@ function ClientsPage() {
           </div>
         </div>
 
-        <div className="grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 p-3 sm:grid-cols-2 lg:hidden">
           {filtered.map((client) => (
             <Card key={client.id} className="border-slate-200 p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-sm font-black uppercase text-primary">
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-black uppercase ${avatarTone(client.name)}`}>
                     {client.name.slice(0, 2)}
                   </div>
                   <div className="min-w-0">
@@ -163,7 +231,10 @@ function ClientsPage() {
                       <Phone className="h-3.5 w-3.5" /> {client.phone}
                     </p>
                     <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
-                      <MapPin className="h-3.5 w-3.5" /> {client.city} - {client.address}
+                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-600">
+                        <MapPin className="h-3 w-3" /> {client.city}
+                      </span>
+                      <span className="truncate">- {client.address}</span>
                     </p>
                   </div>
                 </div>
@@ -191,7 +262,7 @@ function ClientsPage() {
           )}
         </div>
 
-        <div className="hidden">
+        <div className="hidden lg:block lg:overflow-x-auto">
           <table className="w-full min-w-[760px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/70 text-xs uppercase tracking-wider text-slate-500">

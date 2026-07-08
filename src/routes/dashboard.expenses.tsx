@@ -163,7 +163,7 @@ function ExpensesPage() {
       </div>
 
       <Card className="overflow-hidden border-slate-200/80 bg-background shadow-sm">
-        <div className="grid gap-3 p-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 p-3 sm:grid-cols-2 lg:hidden">
           {filtered.map((expense) => (
             <Card key={expense.id} className="border-slate-200 p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
@@ -194,7 +194,7 @@ function ExpensesPage() {
           )}
         </div>
 
-        <div className="hidden">
+        <div className="hidden lg:block lg:overflow-x-auto">
           <table className="w-full min-w-[760px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/70 text-xs uppercase tracking-wider text-slate-500">

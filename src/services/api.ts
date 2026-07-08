@@ -16,6 +16,15 @@ export function formatXOF(value: number) {
   return `${new Intl.NumberFormat("fr-FR").format(value)} FCFA`;
 }
 
+// Media served by the backend (e.g. /media/xxx.jpg) is returned as a relative path so it
+// still works once Vercel rewrites /api/* to the Render backend in production. In local
+// dev the frontend and API run on different ports, so relative paths need the API origin.
+export function resolveMediaUrl(url: string | null | undefined) {
+  if (!url) return null;
+  if (/^(https?:|data:|blob:)/i.test(url)) return url;
+  return `${API_BASE_URL}${url.startsWith("/") ? url : `/${url}`}`;
+}
+
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers = new Headers(options.headers);
   const session = getAuthSession();

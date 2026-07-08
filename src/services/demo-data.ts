@@ -244,6 +244,9 @@ function buildDashboard(store: DemoStore): DashboardSummary {
       { day: "Sam", commandes: 10 },
     ],
     recentOrders: store.orders.slice(0, 6),
+    todayDeposits: Math.min(3, store.orders.length),
+    readyForPickup: store.orders.filter((order) => order.status === "Prêt").length,
+    overdueOrders: store.orders.filter((order) => order.status !== "Livré" && order.deliveryAt < today).length,
   };
 }
 

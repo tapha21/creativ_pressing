@@ -6,6 +6,7 @@ import type {
   Expense,
   Order,
   PhotoItem,
+  PlatformStats,
   ReportsData,
   Shop,
 } from "./types";
@@ -49,6 +50,17 @@ export const pressingApi = {
     ) => apiRequest<Shop>(`/api/shops/${id}/subscription`, { method: "PATCH", body: JSON.stringify(payload) }),
     setActive: (id: string, active: boolean) =>
       apiRequest<Shop>(`/api/shops/${id}/active`, { method: "PATCH", body: JSON.stringify({ active }) }),
+    stats: () => apiRequest<PlatformStats>("/api/shops/stats"),
+    uploadLogo: (id: string, file: File) => {
+      const body = new FormData();
+      body.set("file", file);
+      return apiRequest<Shop>(`/api/shops/${id}/logo`, {
+        method: "POST",
+        body,
+        skipJsonHeader: true,
+        preserveFormData: true,
+      });
+    },
   },
 
   clients: {

@@ -91,6 +91,17 @@ export interface DashboardSummary {
   revenueChart: RevenuePoint[];
   ordersChart: OrdersPoint[];
   recentOrders: Order[];
+  todayDeposits: number;
+  readyForPickup: number;
+  overdueOrders: number;
+}
+
+export interface PlatformStats {
+  totalShops: number;
+  totalClients: number;
+  totalOrders: number;
+  totalEmployees: number;
+  monthlyRevenue: number;
 }
 
 export interface ReportsData {
