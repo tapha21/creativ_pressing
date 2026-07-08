@@ -169,7 +169,7 @@ export function ProofStrip() {
 export function InstallSection() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [iosHint, setIosHint] = useState(false);
-  const appUrl = "https://creativ-pressing.vercel.app/";
+  const appUrl = "https://creativpressing-pwg9fua6y-taphas-projects-12a160b9.vercel.app/";
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(appUrl)}`;
 
   useEffect(() => {
