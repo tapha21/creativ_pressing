@@ -516,7 +516,7 @@ function FormField({
           required
           autoComplete={field.autoComplete}
           placeholder={field.placeholder}
-          className="h-12 rounded-2xl border-slate-200 bg-slate-50/70 pl-10 pr-4 text-sm font-medium shadow-sm transition-all placeholder:text-slate-400 focus-visible:border-sky-300 focus-visible:bg-white focus-visible:ring-sky-500/20"
+          className="h-12 rounded-2xl border-slate-200 bg-slate-50/70 pl-10 pr-4 text-base font-medium shadow-sm transition-all placeholder:text-slate-400 focus-visible:border-sky-300 focus-visible:bg-white focus-visible:ring-sky-500/20 md:text-sm"
         />
 
         {isPassword && (

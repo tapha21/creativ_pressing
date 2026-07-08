@@ -144,8 +144,26 @@
     border-color: var(--color-border);
   }
 
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    touch-action: manipulation;
+    overscroll-behavior-y: none;
+  }
+
+  /* Safety net: iOS Safari auto-zooms into any focused form control whose font-size is
+     below 16px. Our components already default to 16px on mobile, this just guards
+     against any raw/unstyled input slipping through. */
+  @media (max-width: 767px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
   }
 }

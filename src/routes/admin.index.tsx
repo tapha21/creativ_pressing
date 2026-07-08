@@ -324,7 +324,7 @@ function ShopRow({
               }
             }}
             disabled={pending}
-            className="h-9 text-xs"
+            className="h-9 text-base md:text-xs"
           />
         )}
       </TableCell>
