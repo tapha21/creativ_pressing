@@ -54,13 +54,13 @@ export function Hero() {
             Le CRM tout-en-un conçu pour les pressings sénégalais : clients, commandes, caisse, dépenses, photos et performance dans une seule interface fluide.
           </p>
 
-          <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-            <Link to="/signup" className="water-button group h-12 px-7 text-base">
+          <div className="flex flex-col gap-2.5 pt-2 sm:flex-row sm:gap-3">
+            <Link to="/signup" className="water-button group h-10 px-5 text-sm sm:h-12 sm:px-7 sm:text-base">
               Créer ma boutique gratuitement
-              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              <ArrowRight className="ml-2 h-3.5 w-3.5 transition-transform group-hover:translate-x-1 sm:h-4 sm:w-4" />
             </Link>
-            <Link to="/demo" className="water-button-outline h-12 px-7 text-base">
-              <PlayCircle className="mr-2 h-5 w-5 text-sky-500" />
+            <Link to="/demo" className="water-button-outline h-10 px-5 text-sm sm:h-12 sm:px-7 sm:text-base">
+              <PlayCircle className="mr-2 h-4 w-4 text-sky-500 sm:h-5 sm:w-5" />
               Voir la démo
             </Link>
           </div>
@@ -169,7 +169,7 @@ export function ProofStrip() {
 export function InstallSection() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [iosHint, setIosHint] = useState(false);
-  const appUrl = "https://creativpressing-pwg9fua6y-taphas-projects-12a160b9.vercel.app/";
+  const appUrl = "https://pressing-eight.vercel.app/";
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(appUrl)}`;
 
   useEffect(() => {
@@ -190,9 +190,9 @@ export function InstallSection() {
             <h2 className="water-title text-3xl font-black tracking-tight md:text-4xl">Installez Creativ Pressing sur votre téléphone</h2>
             <p className="water-subtitle text-base font-medium leading-relaxed">Accédez à votre outil de travail comme une vraie application. Scannez le QR code depuis votre ordinateur ou utilisez le bouton correspondant à votre système.</p>
           </div>
-          <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-            <button type="button" onClick={() => deferredPrompt?.prompt()} className="water-button h-12 gap-2 px-6"><Download className="h-4 w-4" />Installer sur Android</button>
-            <button type="button" onClick={() => setIosHint(true)} className="water-button-outline h-12 gap-2 px-6"><Download className="h-4 w-4" />Télécharger pour iOS</button>
+          <div className="flex flex-col gap-2.5 pt-2 text-sm sm:flex-row sm:gap-3 sm:text-base">
+            <button type="button" onClick={() => deferredPrompt?.prompt()} className="water-button h-10 gap-2 px-5 sm:h-12 sm:px-6"><Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Installer sur Android</button>
+            <button type="button" onClick={() => setIosHint(true)} className="water-button-outline h-10 gap-2 px-5 sm:h-12 sm:px-6"><Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />Télécharger pour iOS</button>
           </div>
           {iosHint && (
             <div className="water-card max-w-xl rounded-2xl p-4 text-sm font-medium text-sky-900">
@@ -346,9 +346,9 @@ export function FinalCTA() {
             <h2 className="water-title text-3xl font-black leading-none tracking-tight md:text-5xl">Prêt à moderniser votre pressing ?</h2>
             <p className="water-subtitle mx-auto max-w-lg text-sm font-semibold leading-relaxed md:text-base">Moins de paperasse, plus de revenus, moins de litiges et une gestion propre comme votre linge.</p>
           </div>
-          <div className="relative mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link to="/signup" className="water-button group h-12 w-full gap-2 px-7 sm:w-auto">Créer mon compte<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></Link>
-            <Link to="/demo" className="water-button-outline h-12 w-full px-7 sm:w-auto">Voir la démo publique</Link>
+          <div className="relative mt-10 flex flex-col items-center justify-center gap-2.5 text-sm sm:flex-row sm:gap-3 sm:text-base">
+            <Link to="/signup" className="water-button group h-10 w-full gap-2 px-5 sm:h-12 sm:w-auto sm:px-7">Créer mon compte<ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1 sm:h-4 sm:w-4" /></Link>
+            <Link to="/demo" className="water-button-outline h-10 w-full px-5 sm:h-12 sm:w-auto sm:px-7">Voir la démo publique</Link>
           </div>
         </div>
       </div>
